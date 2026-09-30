@@ -8,7 +8,7 @@ qgisMinimumVersion=3.22
 qgisMaximumVersion=4.99
 supportsQt6=True
 description=Download LIDAR (DTM, DSM, point clouds) for England, Wales and Scotland from the official government services, plus Environment Agency aerial photography
-version=0.14.3
+version=0.14.4
 author=Simon Stoate
 email=simon@vigol.uk
 
@@ -19,6 +19,8 @@ repository=https://github.com/simonstoate/LidarDownloaderUK
 homepage=https://github.com/simonstoate/LidarDownloaderUK
 
 changelog=
+    0.14.4 - Passes the plugin site's Qt6 compatibility check: the code for older QGIS 3 versions
+          names its settings in full, as Qt6 expects. Nothing changes in use.
     0.14.3 - First public release. Find, download, organise and load LIDAR for England, Wales and
           Scotland from each nation's official service: pick 5 km grid tiles (or go to a place, or draw
           your site), choose the data (DTMs, DSMs, point clouds and bathymetry back to 1998, and

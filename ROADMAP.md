@@ -230,6 +230,8 @@ A review of the code as an open-source project, and of what plugins.qgis.org che
 - [x] v0.14.3: the first public release. Its metadata changelog starts afresh (one entry; the development
   history is in CHANGELOG.md), and the shading of tiles that have the chosen data works with up to 1,600
   tiles in view (was 400), with a note under its tick box saying what it's doing
+- [x] v0.14.4: passes the plugin site's Qt6 compatibility check (enums named in full in the fallbacks for
+  older QGIS 3 versions)
 - [ ] Make the repository public (Issues on), then submit to plugins.qgis.org (as experimental first)
 
 ## Companion plugin (planned)

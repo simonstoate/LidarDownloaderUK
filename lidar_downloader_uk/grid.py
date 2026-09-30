@@ -309,7 +309,7 @@ class GridLayer(QObject):
         if hasattr(Qgis, 'LabelPlacement'):
             settings.placement = Qgis.LabelPlacement.OverPoint
         else:
-            settings.placement = QgsPalLayerSettings.OverPoint
+            settings.placement = QgsPalLayerSettings.Placement.OverPoint
         settings.scaleVisibility = True
         settings.minimumScale = LABELS_MAX_SCALE  # "minimum" = most zoomed-out scale
 

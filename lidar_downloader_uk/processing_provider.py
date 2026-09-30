@@ -37,7 +37,7 @@ def _any_geometry_type():
     # The source type enum moved to Qgis.ProcessingSourceType in QGIS 3.36
     if hasattr(Qgis, 'ProcessingSourceType'):
         return Qgis.ProcessingSourceType.VectorAnyGeometry
-    return QgsProcessing.TypeVectorAnyGeometry
+    return QgsProcessing.SourceType.TypeVectorAnyGeometry
 
 
 class LidarDownloaderProvider(QgsProcessingProvider):

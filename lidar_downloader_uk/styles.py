@@ -36,12 +36,10 @@ def elevation_colours(layer):
 
 
 def _min_max_flags():
-    # The statistics enum moved between QGIS versions
+    # The statistics flags moved to Qgis.RasterBandStatistic in newer QGIS versions
     if hasattr(Qgis, 'RasterBandStatistic'):
         return Qgis.RasterBandStatistic.Min | Qgis.RasterBandStatistic.Max
-    if hasattr(QgsRasterBandStats, 'Stats'):
-        return QgsRasterBandStats.Stats.Min | QgsRasterBandStats.Stats.Max
-    return QgsRasterBandStats.Min | QgsRasterBandStats.Max
+    return QgsRasterBandStats.Stats.Min | QgsRasterBandStats.Stats.Max
 
 
 def style_survey_dates(layer):

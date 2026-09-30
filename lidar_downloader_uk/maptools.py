@@ -12,7 +12,7 @@ DRAG_PIXELS = 4  # movement before a press counts as a drag
 
 def _polygon_type():
     # The geometry type enum moved to Qgis.GeometryType in QGIS 3.30
-    return Qgis.GeometryType.Polygon if hasattr(Qgis, 'GeometryType') else QgsWkbTypes.PolygonGeometry
+    return Qgis.GeometryType.Polygon if hasattr(Qgis, 'GeometryType') else QgsWkbTypes.GeometryType.PolygonGeometry
 
 
 class _BandTool(QgsMapTool):

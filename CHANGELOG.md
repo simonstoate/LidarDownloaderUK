@@ -2,6 +2,10 @@
 
 All notable changes to LIDAR Downloader UK, newest first. 0.14.3 is the first public release: the changelog in the plugin's `metadata.txt` (shown in QGIS's Plugin Manager and on plugins.qgis.org) starts there, and the versions before it are the plugin's development history.
 
+## 0.14.4
+
+Passes the Qt6 compatibility check that plugins.qgis.org runs on uploads (QGIS's pyqt5_to_pyqt6 script): the fallbacks for older QGIS 3 versions (label placement, geometry type, Processing source type, raster statistics) name their enums in full, as Qt6 requires, instead of the short Qt5 form. Those lines never run on QGIS 4, so nothing changes in use; an unused third fallback for the raster statistics is gone.
+
 ## 0.14.3
 
 First public release (for plugins.qgis.org). "Shade tiles that have the chosen data" works with up to 1,600 tiles in view (it was 400), about 250 x 160 km on a wide screen, and a note under its tick box says when to zoom in, while it's checking, if the check failed, and how many tiles it shaded (only the legend said any of this before, and a failed check said nothing).
