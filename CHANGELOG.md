@@ -2,6 +2,10 @@
 
 All notable changes to LIDAR Downloader UK, newest first. 0.14.3 is the first public release: the changelog in the plugin's `metadata.txt` (shown in QGIS's Plugin Manager and on plugins.qgis.org) starts there, and the versions before it are the plugin's development history.
 
+## 0.14.5
+
+Metadata follows plugins.qgis.org's rules for QGIS 4: the `supportsQt6` flag is gone, as QGIS now takes QGIS 4 support from `qgisMaximumVersion` (4.99) alone and the site warns about the flag on upload. Nothing else changes. QGIS 3 (Qt5) and QGIS 4 never read the flag; the only builds that still do are the Qt6 previews of QGIS 3.40 and 3.44 (such as OSGeo4W's `qgis-ltr-qt6` and `qgis-qt6` packages), which now treat the plugin as incompatible unless `QGIS_DISABLE_SUPPORTS_QT6_CHECK` is set.
+
 ## 0.14.4
 
 Passes the Qt6 compatibility check that plugins.qgis.org runs on uploads (QGIS's pyqt5_to_pyqt6 script): the fallbacks for older QGIS 3 versions (label placement, geometry type, Processing source type, raster statistics) name their enums in full, as Qt6 requires, instead of the short Qt5 form. Those lines never run on QGIS 4, so nothing changes in use; an unused third fallback for the raster statistics is gone.

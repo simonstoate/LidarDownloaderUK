@@ -1,4 +1,4 @@
-"""Check metadata.txt is valid for plugins.qgis.org and declares Qt6 support."""
+"""Check metadata.txt is valid for plugins.qgis.org and allows QGIS 3.22 to 4.x."""
 
 import configparser
 import os
@@ -22,8 +22,10 @@ def test_required_fields():
         assert meta.get(key), key
 
 
-def test_supports_qt6():
-    assert read_metadata().get('supportsQt6') == 'True'
+def test_no_supports_qt6_flag():
+    # Deprecated: QGIS 4 ignores it and plugins.qgis.org warns about it on upload.
+    # QGIS 4 support comes from qgisMaximumVersion alone (see the next test).
+    assert 'supportsQt6' not in read_metadata()
 
 
 def test_allowed_on_qgis_3_and_4():

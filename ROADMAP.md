@@ -232,7 +232,9 @@ A review of the code as an open-source project, and of what plugins.qgis.org che
   tiles in view (was 400), with a note under its tick box saying what it's doing
 - [x] v0.14.4: passes the plugin site's Qt6 compatibility check (enums named in full in the fallbacks for
   older QGIS 3 versions)
-- [ ] Make the repository public (Issues on), then submit to plugins.qgis.org (as experimental first)
+- [x] v0.14.5: metadata follows the plugin site's QGIS 4 rules (`qgisMaximumVersion=4.99`, no `supportsQt6`)
+- [x] Make the repository public (Issues on), then submit to plugins.qgis.org (as experimental first)
+- [ ] Approved on plugins.qgis.org; check it installs from the Plugin Manager (with experimental plugins shown)
 
 ## Companion plugin (planned)
 
