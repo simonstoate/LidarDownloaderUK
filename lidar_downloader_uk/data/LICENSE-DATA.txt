@@ -1,0 +1,20 @@
+osgb_grid_5km.gpkg: every 5 km square of the Ordnance Survey British National Grid (TILE_NAME), from
+Ordnance Survey's osbng-grids datasets (https://github.com/OrdnanceSurvey/osbng-grids), converted to a
+GeoPackage by tools/build_grid.py in the plugin's repository.
+
+Contains OS data (c) Crown copyright and database right.
+
+Licensed under the Open Government Licence v3.0:
+https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/
+
+The HAS_DATA field ('t' where a source listed data for the square when the grid was built) comes from the
+Environment Agency's Survey Data Download service, DataMapWales' LiDAR tile catalogues and the Scottish
+Remote Sensing Portal's catalogue: (c) Environment Agency copyright and/or database right; Welsh
+Government / Natural Resources Wales; Scottish Government; all under the Open Government Licence v3.0.
+The data the plugin downloads is licensed by its source (mostly the Open Government Licence v3.0; some
+Scottish surveys are for non-commercial use only, and the plugin shows their terms before downloading).
+
+ni_place_names.json: towns and villages in Northern Ireland (name, council, latitude, longitude), from
+Ordnance Survey of Northern Ireland's gazetteer (published on OpenDataNI).
+(c) Crown copyright. Contains public sector information licensed under the terms of the Open Government
+Licence v3.0.

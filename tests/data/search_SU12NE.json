@@ -1,0 +1,645 @@
+{
+ "count": 32,
+ "results": [
+  {
+   "product": {
+    "id": "lidar_composite_dtm",
+    "label": "LIDAR Composite DTM"
+   },
+   "year": {
+    "id": "2022",
+    "label": "2022"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_composite_dtm-2022-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_composite_dtm/2022/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_composite_dtm",
+    "label": "LIDAR Composite DTM"
+   },
+   "year": {
+    "id": "2022",
+    "label": "2022"
+   },
+   "resolution": {
+    "id": "2",
+    "label": "2m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_composite_dtm-2022-2m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_composite_dtm/2022/2/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_composite_first_return_dsm",
+    "label": "LIDAR Composite First Return DSM"
+   },
+   "year": {
+    "id": "2022",
+    "label": "2022"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_composite_first_return_dsm-2022-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_composite_first_return_dsm/2022/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_composite_first_return_dsm",
+    "label": "LIDAR Composite First Return DSM"
+   },
+   "year": {
+    "id": "2022",
+    "label": "2022"
+   },
+   "resolution": {
+    "id": "2",
+    "label": "2m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_composite_first_return_dsm-2022-2m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_composite_first_return_dsm/2022/2/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_composite_last_return_dsm",
+    "label": "LIDAR Composite Last Return DSM"
+   },
+   "year": {
+    "id": "2022",
+    "label": "2022"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_composite_last_return_dsm-2022-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_composite_last_return_dsm/2022/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_composite_last_return_dsm",
+    "label": "LIDAR Composite Last Return DSM"
+   },
+   "year": {
+    "id": "2022",
+    "label": "2022"
+   },
+   "resolution": {
+    "id": "2",
+    "label": "2m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_composite_last_return_dsm-2022-2m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_composite_last_return_dsm/2022/2/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_point_cloud",
+    "label": "LIDAR Point Cloud"
+   },
+   "year": {
+    "id": "2005",
+    "label": "2005"
+   },
+   "resolution": {
+    "id": "NaN",
+    "label": "N/A"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_point_cloud-2005-NaNm-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_point_cloud/2005/NaN/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_point_cloud",
+    "label": "LIDAR Point Cloud"
+   },
+   "year": {
+    "id": "2006",
+    "label": "2006"
+   },
+   "resolution": {
+    "id": "NaN",
+    "label": "N/A"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_point_cloud-2006-NaNm-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_point_cloud/2006/NaN/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_point_cloud",
+    "label": "LIDAR Point Cloud"
+   },
+   "year": {
+    "id": "2010",
+    "label": "2010"
+   },
+   "resolution": {
+    "id": "NaN",
+    "label": "N/A"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_point_cloud-2010-NaNm-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_point_cloud/2010/NaN/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_point_cloud",
+    "label": "LIDAR Point Cloud"
+   },
+   "year": {
+    "id": "2012",
+    "label": "2012"
+   },
+   "resolution": {
+    "id": "NaN",
+    "label": "N/A"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_point_cloud-2012-NaNm-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_point_cloud/2012/NaN/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_tiles_dsm",
+    "label": "LIDAR Tiles DSM"
+   },
+   "year": {
+    "id": "2003",
+    "label": "2003"
+   },
+   "resolution": {
+    "id": "2",
+    "label": "2m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_tiles_dsm-2003-2m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_tiles_dsm/2003/2/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_tiles_dsm",
+    "label": "LIDAR Tiles DSM"
+   },
+   "year": {
+    "id": "2005",
+    "label": "2005"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_tiles_dsm-2005-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_tiles_dsm/2005/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_tiles_dsm",
+    "label": "LIDAR Tiles DSM"
+   },
+   "year": {
+    "id": "2006",
+    "label": "2006"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_tiles_dsm-2006-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_tiles_dsm/2006/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_tiles_dsm",
+    "label": "LIDAR Tiles DSM"
+   },
+   "year": {
+    "id": "2010",
+    "label": "2010"
+   },
+   "resolution": {
+    "id": "0.5",
+    "label": "0.5m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_tiles_dsm-2010-0.5m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_tiles_dsm/2010/0.5/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_tiles_dsm",
+    "label": "LIDAR Tiles DSM"
+   },
+   "year": {
+    "id": "2012",
+    "label": "2012"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_tiles_dsm-2012-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_tiles_dsm/2012/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_tiles_dtm",
+    "label": "LIDAR Tiles DTM"
+   },
+   "year": {
+    "id": "2003",
+    "label": "2003"
+   },
+   "resolution": {
+    "id": "2",
+    "label": "2m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_tiles_dtm-2003-2m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_tiles_dtm/2003/2/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_tiles_dtm",
+    "label": "LIDAR Tiles DTM"
+   },
+   "year": {
+    "id": "2005",
+    "label": "2005"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_tiles_dtm-2005-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_tiles_dtm/2005/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_tiles_dtm",
+    "label": "LIDAR Tiles DTM"
+   },
+   "year": {
+    "id": "2006",
+    "label": "2006"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_tiles_dtm-2006-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_tiles_dtm/2006/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_tiles_dtm",
+    "label": "LIDAR Tiles DTM"
+   },
+   "year": {
+    "id": "2010",
+    "label": "2010"
+   },
+   "resolution": {
+    "id": "0.5",
+    "label": "0.5m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_tiles_dtm-2010-0.5m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_tiles_dtm/2010/0.5/SU1525"
+  },
+  {
+   "product": {
+    "id": "lidar_tiles_dtm",
+    "label": "LIDAR Tiles DTM"
+   },
+   "year": {
+    "id": "2012",
+    "label": "2012"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "lidar_tiles_dtm-2012-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/lidar_tiles_dtm/2012/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "national_lidar_programme_dsm",
+    "label": "National LIDAR Programme DSM"
+   },
+   "year": {
+    "id": "2019",
+    "label": "2019"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "national_lidar_programme_dsm-2019-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/national_lidar_programme_dsm/2019/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "national_lidar_programme_dtm",
+    "label": "National LIDAR Programme DTM"
+   },
+   "year": {
+    "id": "2019",
+    "label": "2019"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "national_lidar_programme_dtm-2019-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/national_lidar_programme_dtm/2019/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "national_lidar_programme_first_return_dsm",
+    "label": "National LIDAR Programme First Return DSM"
+   },
+   "year": {
+    "id": "2019",
+    "label": "2019"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "national_lidar_programme_first_return_dsm-2019-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/national_lidar_programme_first_return_dsm/2019/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "national_lidar_programme_intensity",
+    "label": "National LIDAR Programme Intensity"
+   },
+   "year": {
+    "id": "2019",
+    "label": "2019"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "national_lidar_programme_intensity-2019-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/national_lidar_programme_intensity/2019/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "national_lidar_programme_point_cloud",
+    "label": "National LIDAR Programme Point Cloud"
+   },
+   "year": {
+    "id": "2019",
+    "label": "2019"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "national_lidar_programme_point_cloud-2019-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/national_lidar_programme_point_cloud/2019/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "national_lidar_programme_vom",
+    "label": "National LIDAR Programme VOM"
+   },
+   "year": {
+    "id": "2019",
+    "label": "2019"
+   },
+   "resolution": {
+    "id": "1",
+    "label": "1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "national_lidar_programme_vom-2019-1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/national_lidar_programme_vom/2019/1/SU1525"
+  },
+  {
+   "product": {
+    "id": "oblique_aerial_photography_tiles_incident_response",
+    "label": "Oblique Aerial Photography Tiles Incident Response"
+   },
+   "year": {
+    "id": "2014",
+    "label": "2014"
+   },
+   "resolution": {
+    "id": "NaN",
+    "label": "N/A"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "oblique_aerial_photography_tiles_incident_response-2014-NaNm-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/oblique_aerial_photography_tiles_incident_response/2014/NaN/SU1525"
+  },
+  {
+   "product": {
+    "id": "oblique_aerial_photography_tiles_incident_response",
+    "label": "Oblique Aerial Photography Tiles Incident Response"
+   },
+   "year": {
+    "id": "2023",
+    "label": "2023"
+   },
+   "resolution": {
+    "id": "NaN",
+    "label": "N/A"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "oblique_aerial_photography_tiles_incident_response-2023-NaNm-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/oblique_aerial_photography_tiles_incident_response/2023/NaN/SU1525"
+  },
+  {
+   "product": {
+    "id": "vertical_aerial_photography_tiles_irrgb",
+    "label": "Vertical Aerial Photography Tiles IRRGB"
+   },
+   "year": {
+    "id": "2009",
+    "label": "2009"
+   },
+   "resolution": {
+    "id": "0.25",
+    "label": "0.25m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "vertical_aerial_photography_tiles_irrgb-2009-0.25m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/vertical_aerial_photography_tiles_irrgb/2009/0.25/SU1525"
+  },
+  {
+   "product": {
+    "id": "vertical_aerial_photography_tiles_irrgb",
+    "label": "Vertical Aerial Photography Tiles IRRGB"
+   },
+   "year": {
+    "id": "2014",
+    "label": "2014"
+   },
+   "resolution": {
+    "id": "0.1",
+    "label": "0.1m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "vertical_aerial_photography_tiles_irrgb-2014-0.1m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/vertical_aerial_photography_tiles_irrgb/2014/0.1/SU1525"
+  },
+  {
+   "product": {
+    "id": "vertical_aerial_photography_tiles_irrgb",
+    "label": "Vertical Aerial Photography Tiles IRRGB"
+   },
+   "year": {
+    "id": "2014",
+    "label": "2014"
+   },
+   "resolution": {
+    "id": "0.2",
+    "label": "0.2m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "vertical_aerial_photography_tiles_irrgb-2014-0.2m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/vertical_aerial_photography_tiles_irrgb/2014/0.2/SU1525"
+  },
+  {
+   "product": {
+    "id": "vertical_aerial_photography_tiles_rgbn",
+    "label": "Vertical Aerial Photography Tiles RGBN"
+   },
+   "year": {
+    "id": "2014",
+    "label": "2014"
+   },
+   "resolution": {
+    "id": "0.2",
+    "label": "0.2m"
+   },
+   "tile": {
+    "id": "SU1525",
+    "label": "SU12ne"
+   },
+   "label": "vertical_aerial_photography_tiles_rgbn-2014-0.2m-SU12ne",
+   "uri": "https://environment.data.gov.uk/tiles/collections/survey/vertical_aerial_photography_tiles_rgbn/2014/0.2/SU1525"
+  }
+ ]
+}

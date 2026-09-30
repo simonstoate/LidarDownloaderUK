@@ -1,0 +1,816 @@
+{
+ "result": [
+  {
+   "id": "29991b2e-1ea5-4013-ab9c-ee6fb92259c3",
+   "name": "ns7893_50cm_dsm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/dsm",
+   "metadata": {
+    "title": "HES 2010 DSM NS7893"
+   },
+   "properties": {
+    "osgbGridRef": "NS7893"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/dsm/27700/gridded/NS7893_50CM_DSM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/dsm/27700/gridded/NS7893_50CM_DSM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff"
+     },
+     "title": "HES 2010 DSM NS7893"
+    }
+   }
+  },
+  {
+   "id": "e07ba80a-bfdb-4695-8abd-968a8d4152fe",
+   "name": "ns7894_50cm_dsm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/dsm",
+   "metadata": {
+    "title": "HES 2010 DSM NS7894"
+   },
+   "properties": {
+    "osgbGridRef": "NS7894"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/dsm/27700/gridded/NS7894_50CM_DSM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/dsm/27700/gridded/NS7894_50CM_DSM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff"
+     },
+     "title": "HES 2010 DSM NS7894"
+    }
+   }
+  },
+  {
+   "id": "7f27dc28-221b-4f06-92aa-cb1f9bbf7aff",
+   "name": "ns7993_50cm_dsm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/dsm",
+   "metadata": {
+    "title": "HES 2010 DSM NS7993"
+   },
+   "properties": {
+    "osgbGridRef": "NS7993"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/dsm/27700/gridded/NS7993_50CM_DSM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/dsm/27700/gridded/NS7993_50CM_DSM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff"
+     },
+     "title": "HES 2010 DSM NS7993"
+    }
+   }
+  },
+  {
+   "id": "5c89ce19-edd0-49c7-82d5-0ebebdee9808",
+   "name": "ns7994_50cm_dsm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/dsm",
+   "metadata": {
+    "title": "HES 2010 DSM NS7994"
+   },
+   "properties": {
+    "osgbGridRef": "NS7994"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/dsm/27700/gridded/NS7994_50CM_DSM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/dsm/27700/gridded/NS7994_50CM_DSM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff"
+     },
+     "title": "HES 2010 DSM NS7994"
+    }
+   }
+  },
+  {
+   "id": "d8f5de90-26d4-4ef3-bfcb-db7604592b68",
+   "name": "ns7893_50cm_dtm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/dtm",
+   "metadata": {
+    "title": "HES 2010 DTM NS7893"
+   },
+   "properties": {
+    "osgbGridRef": "NS7893"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/dtm/27700/gridded/NS7893_50CM_DTM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/dtm/27700/gridded/NS7893_50CM_DTM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff"
+     },
+     "title": "HES 2010 DTM NS7893"
+    }
+   }
+  },
+  {
+   "id": "fff3977b-a608-4051-bcd6-2d83d6eeecde",
+   "name": "ns7894_50cm_dtm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/dtm",
+   "metadata": {
+    "title": "HES 2010 DTM NS7894"
+   },
+   "properties": {
+    "osgbGridRef": "NS7894"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/dtm/27700/gridded/NS7894_50CM_DTM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/dtm/27700/gridded/NS7894_50CM_DTM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff"
+     },
+     "title": "HES 2010 DTM NS7894"
+    }
+   }
+  },
+  {
+   "id": "0e365093-2e9d-4b75-95a4-4523828a2fb4",
+   "name": "ns7993_50cm_dtm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/dtm",
+   "metadata": {
+    "title": "HES 2010 DTM NS7993"
+   },
+   "properties": {
+    "osgbGridRef": "NS7993"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/dtm/27700/gridded/NS7993_50CM_DTM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/dtm/27700/gridded/NS7993_50CM_DTM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff"
+     },
+     "title": "HES 2010 DTM NS7993"
+    }
+   }
+  },
+  {
+   "id": "a6c0306f-1e27-45e0-8161-26fe3d3ff914",
+   "name": "ns7994_50cm_dtm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/dtm",
+   "metadata": {
+    "title": "HES 2010 DTM NS7994"
+   },
+   "properties": {
+    "osgbGridRef": "NS7994"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/dtm/27700/gridded/NS7994_50CM_DTM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/dtm/27700/gridded/NS7994_50CM_DTM_HES2010.tif",
+      "size": 16012517,
+      "type": "image/tiff"
+     },
+     "title": "HES 2010 DTM NS7994"
+    }
+   }
+  },
+  {
+   "id": "b0e9f58a-3d87-4a73-ac08-4f49e1d206aa",
+   "name": "ns7893_4ppm_lasdsm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/laz/dsm",
+   "metadata": {
+    "title": "HES 2010 LASDSM NS7893"
+   },
+   "properties": {
+    "osgbGridRef": "NS7893"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/las/dsm/27700/gridded/NS7893_4PPM_LASDSM_HES2010.laz",
+      "size": 4017724,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/las/dsm/27700/gridded/NS7893_4PPM_LASDSM_HES2010.laz",
+      "size": 4017724,
+      "type": "application/octet-stream"
+     },
+     "title": "HES 2010 LASDSM NS7893"
+    }
+   }
+  },
+  {
+   "id": "536143d3-99b6-40ec-9edc-8e48d39732ae",
+   "name": "ns7894_4ppm_lasdsm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/laz/dsm",
+   "metadata": {
+    "title": "HES 2010 LASDSM NS7894"
+   },
+   "properties": {
+    "osgbGridRef": "NS7894"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/las/dsm/27700/gridded/NS7894_4PPM_LASDSM_HES2010.laz",
+      "size": 4265346,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/las/dsm/27700/gridded/NS7894_4PPM_LASDSM_HES2010.laz",
+      "size": 4265346,
+      "type": "application/octet-stream"
+     },
+     "title": "HES 2010 LASDSM NS7894"
+    }
+   }
+  },
+  {
+   "id": "64b4fa44-1b0e-44dd-a6aa-b8b543888a0a",
+   "name": "ns7993_4ppm_lasdsm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/laz/dsm",
+   "metadata": {
+    "title": "HES 2010 LASDSM NS7993"
+   },
+   "properties": {
+    "osgbGridRef": "NS7993"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/las/dsm/27700/gridded/NS7993_4PPM_LASDSM_HES2010.laz",
+      "size": 5079921,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/las/dsm/27700/gridded/NS7993_4PPM_LASDSM_HES2010.laz",
+      "size": 5079921,
+      "type": "application/octet-stream"
+     },
+     "title": "HES 2010 LASDSM NS7993"
+    }
+   }
+  },
+  {
+   "id": "f50e0c8a-2ebf-4b7d-9feb-e83f86381d44",
+   "name": "ns7994_4ppm_lasdsm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/laz/dsm",
+   "metadata": {
+    "title": "HES 2010 LASDSM NS7994"
+   },
+   "properties": {
+    "osgbGridRef": "NS7994"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/las/dsm/27700/gridded/NS7994_4PPM_LASDSM_HES2010.laz",
+      "size": 4886010,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/las/dsm/27700/gridded/NS7994_4PPM_LASDSM_HES2010.laz",
+      "size": 4886010,
+      "type": "application/octet-stream"
+     },
+     "title": "HES 2010 LASDSM NS7994"
+    }
+   }
+  },
+  {
+   "id": "74ce8d3e-87ca-4dae-886f-7f032e84f993",
+   "name": "ns7893_4ppm_lasdtm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/laz/dtm",
+   "metadata": {
+    "title": "HES 2010 LASDTM NS7893"
+   },
+   "properties": {
+    "osgbGridRef": "NS7893"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/las/dtm/27700/gridded/NS7893_4PPM_LASDTM_HES2010.laz",
+      "size": 3435151,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/las/dtm/27700/gridded/NS7893_4PPM_LASDTM_HES2010.laz",
+      "size": 3435151,
+      "type": "application/octet-stream"
+     },
+     "title": "HES 2010 LASDTM NS7893"
+    }
+   }
+  },
+  {
+   "id": "53289189-a055-4619-937b-6af0d367e561",
+   "name": "ns7894_4ppm_lasdtm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/laz/dtm",
+   "metadata": {
+    "title": "HES 2010 LASDTM NS7894"
+   },
+   "properties": {
+    "osgbGridRef": "NS7894"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/las/dtm/27700/gridded/NS7894_4PPM_LASDTM_HES2010.laz",
+      "size": 3653270,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/las/dtm/27700/gridded/NS7894_4PPM_LASDTM_HES2010.laz",
+      "size": 3653270,
+      "type": "application/octet-stream"
+     },
+     "title": "HES 2010 LASDTM NS7894"
+    }
+   }
+  },
+  {
+   "id": "3158574d-9cdc-424d-a981-60bc4af02c32",
+   "name": "ns7993_4ppm_lasdtm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/laz/dtm",
+   "metadata": {
+    "title": "HES 2010 LASDTM NS7993"
+   },
+   "properties": {
+    "osgbGridRef": "NS7993"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/las/dtm/27700/gridded/NS7993_4PPM_LASDTM_HES2010.laz",
+      "size": 4009601,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/las/dtm/27700/gridded/NS7993_4PPM_LASDTM_HES2010.laz",
+      "size": 4009601,
+      "type": "application/octet-stream"
+     },
+     "title": "HES 2010 LASDTM NS7993"
+    }
+   }
+  },
+  {
+   "id": "f46d41f7-018d-45fe-9a38-75dbd6498aae",
+   "name": "ns7994_4ppm_lasdtm_hes2010",
+   "collectionName": "scotland-gov/lidar/hes/hes-2010/laz/dtm",
+   "metadata": {
+    "title": "HES 2010 LASDTM NS7994"
+   },
+   "properties": {
+    "osgbGridRef": "NS7994"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/hes/hes_2010/las/dtm/27700/gridded/NS7994_4PPM_LASDTM_HES2010.laz",
+      "size": 3940368,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/hes/hes_2010/las/dtm/27700/gridded/NS7994_4PPM_LASDTM_HES2010.laz",
+      "size": 3940368,
+      "type": "application/octet-stream"
+     },
+     "title": "HES 2010 LASDTM NS7994"
+    }
+   }
+  },
+  {
+   "id": "51121f05-cd51-40b3-b4af-d670fdfad820",
+   "name": "ns79_1m_dsm_phase1",
+   "collectionName": "scotland-gov/lidar/phase-1/dsm",
+   "metadata": {
+    "title": "Scotland Lidar Phase 1 DSM NS79"
+   },
+   "properties": {
+    "osgbGridRef": "NS79"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-1/dsm/27700/gridded/NS79_1M_DSM_PHASE1.tif",
+      "size": 83708063,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3.eu-west-2.amazonaws.com/lidar/phase-1/dsm/27700/gridded/NS79_1M_DSM_PHASE1.tif",
+      "size": 83708063,
+      "type": "image/tiff"
+     },
+     "title": "Scotland Lidar Phase 1 DSM NS79"
+    }
+   }
+  },
+  {
+   "id": "fd92d9c1-2cb6-4cd7-9977-f94b06238d99",
+   "name": "ns79_1m_dtm_phase1",
+   "collectionName": "scotland-gov/lidar/phase-1/dtm",
+   "metadata": {
+    "title": "Scotland Lidar Phase 1 DTM NS79"
+   },
+   "properties": {
+    "osgbGridRef": "NS79"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-1/dtm/27700/gridded/NS79_1M_DTM_PHASE1.tif",
+      "size": 80884048,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3.eu-west-2.amazonaws.com/lidar/phase-1/dtm/27700/gridded/NS79_1M_DTM_PHASE1.tif",
+      "size": 80884048,
+      "type": "image/tiff"
+     },
+     "title": "Scotland Lidar Phase 1 DTM NS79"
+    }
+   }
+  },
+  {
+   "id": "252664d0-a5f7-4a18-99e2-31f57bfb319b",
+   "name": "ns7893_2ppm_las_phase1",
+   "collectionName": "scotland-gov/lidar/phase-1/laz",
+   "metadata": {
+    "title": "Scotland Lidar Phase 1 LAS NS7893"
+   },
+   "properties": {
+    "osgbGridRef": "NS7893"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-1/laz/27700/gridded/NS7893_2PPM_LAS_PHASE1.laz",
+      "size": 3422256,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3.eu-west-2.amazonaws.com/lidar/phase-1/laz/27700/gridded/NS7893_2PPM_LAS_PHASE1.laz",
+      "size": 3422256,
+      "type": "application/octet-stream"
+     },
+     "title": "Scotland Lidar Phase 1 LAS NS7893"
+    }
+   }
+  },
+  {
+   "id": "cfbbaf01-683d-44d9-97bb-8b13be219186",
+   "name": "ns7993_2ppm_las_phase1",
+   "collectionName": "scotland-gov/lidar/phase-1/laz",
+   "metadata": {
+    "title": "Scotland Lidar Phase 1 LAS NS7993"
+   },
+   "properties": {
+    "osgbGridRef": "NS7993"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-1/laz/27700/gridded/NS7993_2PPM_LAS_PHASE1.laz",
+      "size": 6524279,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3.eu-west-2.amazonaws.com/lidar/phase-1/laz/27700/gridded/NS7993_2PPM_LAS_PHASE1.laz",
+      "size": 6524279,
+      "type": "application/octet-stream"
+     },
+     "title": "Scotland Lidar Phase 1 LAS NS7993"
+    }
+   }
+  },
+  {
+   "id": "cb82543c-755d-4ceb-8e1f-158be3c3fab6",
+   "name": "ns79se_50cm_dsm_phase4",
+   "collectionName": "scotland-gov/lidar/phase-4/dsm",
+   "metadata": {
+    "title": "Scotland Lidar Phase 4 DSM NS79SE"
+   },
+   "properties": {
+    "osgbGridRef": "NS79SE"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-4/dsm/27700/gridded/NS79SE_50CM_DSM_PHASE4.tif",
+      "size": 402033997,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3.eu-west-2.amazonaws.com/lidar/phase-4/dsm/27700/gridded/NS79SE_50CM_DSM_PHASE4.tif",
+      "size": 402033997,
+      "type": "image/tiff"
+     },
+     "title": "Scotland Lidar Phase 4 DSM NS79SE"
+    }
+   }
+  },
+  {
+   "id": "e4e0e190-2a76-4da3-a78f-7da0b8397d56",
+   "name": "ns79se_50cm_dtm_phase4",
+   "collectionName": "scotland-gov/lidar/phase-4/dtm",
+   "metadata": {
+    "title": "Scotland Lidar Phase 4 DTM NS79SE"
+   },
+   "properties": {
+    "osgbGridRef": "NS79SE"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-4/dtm/27700/gridded/NS79SE_50CM_DTM_PHASE4.tif",
+      "size": 404590562,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3.eu-west-2.amazonaws.com/lidar/phase-4/dtm/27700/gridded/NS79SE_50CM_DTM_PHASE4.tif",
+      "size": 404590562,
+      "type": "image/tiff"
+     },
+     "title": "Scotland Lidar Phase 4 DTM NS79SE"
+    }
+   }
+  },
+  {
+   "id": "40055bd2-0e9b-42ba-8263-4baa0f90a33a",
+   "name": "ns7893_4ppm_las_phase4",
+   "collectionName": "scotland-gov/lidar/phase-4/laz",
+   "metadata": {
+    "title": "Scotland Lidar Phase 4 LAS NS7893"
+   },
+   "properties": {
+    "osgbGridRef": "NS7893"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-4/laz/27700/gridded/NS7893_4PPM_LAS_PHASE4.laz",
+      "size": 38352805,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3.eu-west-2.amazonaws.com/lidar/phase-4/laz/27700/gridded/NS7893_4PPM_LAS_PHASE4.laz",
+      "size": 38352805,
+      "type": "application/octet-stream"
+     },
+     "title": "Scotland Lidar Phase 4 LAS NS7893"
+    }
+   }
+  },
+  {
+   "id": "7f761291-ca69-4861-a660-f5af6f757608",
+   "name": "ns7894_4ppm_las_phase4",
+   "collectionName": "scotland-gov/lidar/phase-4/laz",
+   "metadata": {
+    "title": "Scotland Lidar Phase 4 LAS NS7894"
+   },
+   "properties": {
+    "osgbGridRef": "NS7894"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-4/laz/27700/gridded/NS7894_4PPM_LAS_PHASE4.laz",
+      "size": 38291043,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3.eu-west-2.amazonaws.com/lidar/phase-4/laz/27700/gridded/NS7894_4PPM_LAS_PHASE4.laz",
+      "size": 38291043,
+      "type": "application/octet-stream"
+     },
+     "title": "Scotland Lidar Phase 4 LAS NS7894"
+    }
+   }
+  },
+  {
+   "id": "db6b5854-41ad-4724-a030-385c5f08012c",
+   "name": "ns7993_4ppm_las_phase4",
+   "collectionName": "scotland-gov/lidar/phase-4/laz",
+   "metadata": {
+    "title": "Scotland Lidar Phase 4 LAS NS7993"
+   },
+   "properties": {
+    "osgbGridRef": "NS7993"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-4/laz/27700/gridded/NS7993_4PPM_LAS_PHASE4.laz",
+      "size": 39305289,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3.eu-west-2.amazonaws.com/lidar/phase-4/laz/27700/gridded/NS7993_4PPM_LAS_PHASE4.laz",
+      "size": 39305289,
+      "type": "application/octet-stream"
+     },
+     "title": "Scotland Lidar Phase 4 LAS NS7993"
+    }
+   }
+  },
+  {
+   "id": "862111af-4f31-44d8-ac1a-fe5347124e6d",
+   "name": "ns7994_4ppm_las_phase4",
+   "collectionName": "scotland-gov/lidar/phase-4/laz",
+   "metadata": {
+    "title": "Scotland Lidar Phase 4 LAS NS7994"
+   },
+   "properties": {
+    "osgbGridRef": "NS7994"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-4/laz/27700/gridded/NS7994_4PPM_LAS_PHASE4.laz",
+      "size": 38072991,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3.eu-west-2.amazonaws.com/lidar/phase-4/laz/27700/gridded/NS7994_4PPM_LAS_PHASE4.laz",
+      "size": 38072991,
+      "type": "application/octet-stream"
+     },
+     "title": "Scotland Lidar Phase 4 LAS NS7994"
+    }
+   }
+  },
+  {
+   "id": "495d233a-7a55-42e0-b00c-6f2436197c62",
+   "name": "ns79se_50cm_dsm_phase5",
+   "collectionName": "scotland-gov/lidar/phase-5/dsm",
+   "metadata": {
+    "title": "Scotland Lidar Phase 5 DSM NS79SE"
+   },
+   "properties": {
+    "osgbGridRef": "NS79SE"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-5/dsm/27700/gridded/NS79SE_50CM_DSM_PHASE5.tif",
+      "size": 6104519,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/phase-5/dsm/27700/gridded/NS79SE_50CM_DSM_PHASE5.tif",
+      "size": 6104519,
+      "type": "image/tiff"
+     },
+     "title": "Scotland Lidar Phase 5 DSM NS79SE"
+    }
+   }
+  },
+  {
+   "id": "cf3df87c-6579-47a5-b958-151d6f548c49",
+   "name": "ns79se_50cm_dtm_phase5",
+   "collectionName": "scotland-gov/lidar/phase-5/dtm",
+   "metadata": {
+    "title": "Scotland Lidar Phase 5 DTM NS79SE"
+   },
+   "properties": {
+    "osgbGridRef": "NS79SE"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-5/dtm/27700/gridded/NS79SE_50CM_DTM_PHASE5.tif",
+      "size": 6162547,
+      "type": "image/tiff",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/phase-5/dtm/27700/gridded/NS79SE_50CM_DTM_PHASE5.tif",
+      "size": 6162547,
+      "type": "image/tiff"
+     },
+     "title": "Scotland Lidar Phase 5 DTM NS79SE"
+    }
+   }
+  },
+  {
+   "id": "140ab11e-842d-4bb9-84a9-a9033662a82a",
+   "name": "ns7994_4ppm_las_phase5",
+   "collectionName": "scotland-gov/lidar/phase-5/laz",
+   "metadata": {
+    "title": "Scotland Lidar Phase 5 LAS NS7994"
+   },
+   "properties": {
+    "osgbGridRef": "NS7994"
+   },
+   "data": {
+    "product": {
+     "s3": {
+      "key": "lidar/phase-5/laz/27700/gridded/NS7994_4PPM_LAS_PHASE5.laz",
+      "size": 1900912,
+      "type": "application/octet-stream",
+      "bucket": "srsp-open-data",
+      "region": "eu-west-2"
+     },
+     "http": {
+      "url": "https://srsp-open-data.s3-eu-west-2.amazonaws.com/lidar/phase-5/laz/27700/gridded/NS7994_4PPM_LAS_PHASE5.laz",
+      "size": 1900912,
+      "type": "application/octet-stream"
+     },
+     "title": "Scotland Lidar Phase 5 LAS NS7994"
+    }
+   }
+  }
+ ]
+}

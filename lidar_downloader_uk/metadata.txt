@@ -1,0 +1,35 @@
+# This file contains metadata for your plugin.
+# This file should be included when you package your plugin.
+
+[general]
+name=LIDAR Downloader UK
+qgisMinimumVersion=3.22
+# Without this, QGIS assumes a maximum of 3.99 and refuses to enable the plugin in QGIS 4
+qgisMaximumVersion=4.99
+supportsQt6=True
+description=Download LIDAR (DTM, DSM, point clouds) for England, Wales and Scotland from the official government services, plus Environment Agency aerial photography
+version=0.14.3
+author=Simon Stoate
+email=simon@vigol.uk
+
+about=Find, download and organise LIDAR for England, Wales and Scotland from each government's official service. Select 5 km OSGB grid tiles on the map (or go to a place, postcode or grid reference, or draw your site) and download: England from the Environment Agency (Defra Survey Data Download: LIDAR Composite and National LIDAR Programme DTM/DSM, vegetation height, intensity and point clouds, single surveys back to 1998, river bathymetry, the coastal SurfZone DEM and aerial photography), Wales from DataMapWales (the 2020-22 national survey and NRW's archive) and Scotland from the Scottish Remote Sensing Portal (Phase 1-6 DTM/DSM and point clouds, and other surveys). Northern Ireland's data isn't downloadable yet: the plugin links to it on OpenDataNI. Tiles download in the background, into one folder per survey, and load as one seamless mosaic per dataset, cropped to your site if you like (download and crop in one go). Save mosaics as a VRT or GeoTIFF, see when each area was flown, and manage your downloads. The download tool is also in the Processing Toolbox. Data mostly under the Open Government Licence; a few Scottish surveys are non-commercial only, and the plugin asks before downloading them. Requirements: an internet connection. Point clouds load as one layer with QGIS 3.32+ and PDAL (included in the standard installers); vertical aerial photography (ECW) needs QGIS's ECW support. Place and postcode search sends the text typed to postcodes.io. The bundled OSGB grid contains OS data (c) Crown copyright and database right, and the Northern Ireland place names OSNI data (both OGL v3.0).
+
+tracker=https://github.com/simonstoate/LidarDownloaderUK/issues
+repository=https://github.com/simonstoate/LidarDownloaderUK
+homepage=https://github.com/simonstoate/LidarDownloaderUK
+
+changelog=
+    0.14.3 - First public release. Find, download, organise and load LIDAR for England, Wales and
+          Scotland from each nation's official service: pick 5 km grid tiles (or go to a place, or draw
+          your site), choose the data (DTMs, DSMs, point clouds and bathymetry back to 1998, and
+          England's aerial photos) and download in the background. Tiles load as one seamless mosaic
+          per dataset, cropped to your site if you like. The download tool is also in the Processing
+          Toolbox. Development history: CHANGELOG.md in the repository.
+
+tags=lidar,dtm,dsm,point cloud,elevation,bathymetry,terrain,flood,aerial photography,orthophoto,mosaic,vrt,processing,environment agency,defra,england,wales,scotland,northern ireland,download,uk
+category=Web
+icon=icon.png
+experimental=True
+deprecated=False
+hasProcessingProvider=yes
+server=False

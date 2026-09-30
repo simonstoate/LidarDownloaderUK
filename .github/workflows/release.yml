@@ -1,0 +1,32 @@
+name: Release
+
+# Push a tag like v0.3 to build the plugin zip and attach it to a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check tag matches metadata.txt version
+        run: |
+          version=$(sed -n 's/^version=//p' lidar_downloader_uk/metadata.txt)
+          test "v${version}" = "${GITHUB_REF_NAME}" || { echo "Tag ${GITHUB_REF_NAME} != metadata version ${version}"; exit 1; }
+
+      - name: Build plugin zip
+        run: |
+          zip -r "lidar_downloader_uk-${GITHUB_REF_NAME}.zip" lidar_downloader_uk -x '*/__pycache__/*' '*.pyc' '*/.*'
+          # The only hidden file shipped: the flake8 settings plugins.qgis.org's code scan reads
+          zip "lidar_downloader_uk-${GITHUB_REF_NAME}.zip" lidar_downloader_uk/.flake8
+          unzip -l "lidar_downloader_uk-${GITHUB_REF_NAME}.zip"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" "lidar_downloader_uk-${GITHUB_REF_NAME}.zip" --title "${GITHUB_REF_NAME}" --generate-notes

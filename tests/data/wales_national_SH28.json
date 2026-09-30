@@ -1,0 +1,164 @@
+{
+ "features": [
+  {
+   "type": "Feature",
+   "id": "welsh_government_lidar_tile_catalogue_2020_2023.1",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "british_gr": "SH2281",
+    "dtm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dtm/wg_del_1_222381_20200322dtm.tif",
+    "dsm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dsm/wg_del_1_222381_20200322dsm.tif",
+    "delivery": "1",
+    "date": "22-03-2020",
+    "start_time": "10:16:53",
+    "end_time": "10:19:09",
+    "year": "2020"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "welsh_government_lidar_tile_catalogue_2020_2023.2",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "british_gr": "SH2282",
+    "dtm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dtm/wg_del_1_222382_20200322dtm.tif",
+    "dsm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dsm/wg_del_1_222382_20200322dsm.tif",
+    "delivery": "1",
+    "date": "22-03-2020",
+    "start_time": "10:16:53",
+    "end_time": "10:19:09",
+    "year": "2020"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "welsh_government_lidar_tile_catalogue_2020_2023.3",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "british_gr": "SH2381",
+    "dtm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dtm/wg_del_1_223381_20200322dtm.tif",
+    "dsm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dsm/wg_del_1_223381_20200322dsm.tif",
+    "delivery": "1",
+    "date": "22-03-2020",
+    "start_time": "10:22:51",
+    "end_time": "10:25:12",
+    "year": "2020"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "welsh_government_lidar_tile_catalogue_2020_2023.4",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "british_gr": "SH2382",
+    "dtm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dtm/wg_del_1_223382_20200322dtm.tif",
+    "dsm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dsm/wg_del_1_223382_20200322dsm.tif",
+    "delivery": "1",
+    "date": "22-03-2020",
+    "start_time": "10:22:51",
+    "end_time": "10:25:12",
+    "year": "2020"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "welsh_government_lidar_tile_catalogue_2020_2023.5",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "british_gr": "SH2480",
+    "dtm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dtm/wg_del_1_224380_20200322dtm.tif",
+    "dsm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dsm/wg_del_1_224380_20200322dsm.tif",
+    "delivery": "1",
+    "date": "22-03-2020",
+    "start_time": "10:28:50",
+    "end_time": "10:32:30",
+    "year": "2020"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "welsh_government_lidar_tile_catalogue_2020_2023.6",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "british_gr": "SH2481",
+    "dtm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dtm/wg_del_1_224381_20200322dtm.tif",
+    "dsm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dsm/wg_del_1_224381_20200322dsm.tif",
+    "delivery": "1",
+    "date": "22-03-2020",
+    "start_time": "10:28:50",
+    "end_time": "10:32:30",
+    "year": "2020"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "welsh_government_lidar_tile_catalogue_2020_2023.20063",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "british_gr": "SH2180",
+    "dtm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dtm/wg_del_29_221380_20220319dtm.tif",
+    "dsm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dsm/wg_del_29_221380_20220319dsm.tif",
+    "delivery": "29",
+    "date": "19-03-2022",
+    "start_time": "17:14:39",
+    "end_time": "17:18:27",
+    "year": "2022"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "welsh_government_lidar_tile_catalogue_2020_2023.20064",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "british_gr": "SH2181",
+    "dtm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dtm/wg_del_29_221381_20220319dtm.tif",
+    "dsm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dsm/wg_del_29_221381_20220319dsm.tif",
+    "delivery": "29",
+    "date": "19-03-2022",
+    "start_time": "17:22:33",
+    "end_time": "17:25:57",
+    "year": "2022"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "welsh_government_lidar_tile_catalogue_2020_2023.20065",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "british_gr": "SH2182",
+    "dtm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dtm/wg_del_29_221382_20220319dtm.tif",
+    "dsm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dsm/wg_del_29_221382_20220319dsm.tif",
+    "delivery": "29",
+    "date": "19-03-2022",
+    "start_time": "17:22:33",
+    "end_time": "17:25:57",
+    "year": "2022"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "welsh_government_lidar_tile_catalogue_2020_2023.20070",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "british_gr": "SH2280",
+    "dtm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dtm/wg_del_29_222380_20220319dtm.tif",
+    "dsm_link": "dmwproductionblob.blob.core.windows.net/lidar-zips/2020-22/dsm/wg_del_29_222380_20220319dsm.tif",
+    "delivery": "29",
+    "date": "19-03-2022",
+    "start_time": "17:22:33",
+    "end_time": "17:25:57",
+    "year": "2022"
+   }
+  }
+ ]
+}

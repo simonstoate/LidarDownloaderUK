@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>LidarDownloaderDockWidgetBase</class>
+ <widget class="QDockWidget" name="LidarDownloaderDockWidgetBase">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>340</width>
+    <height>520</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>LIDAR Downloader UK</string>
+  </property>
+  <widget class="QWidget" name="dockWidgetContents">
+   <layout class="QVBoxLayout" name="layMain">
+    <item>
+     <widget class="QGroupBox" name="grpTiles">
+      <property name="title">
+       <string>1. Choose your area</string>
+      </property>
+      <layout class="QVBoxLayout" name="layTiles">
+       <item>
+        <layout class="QHBoxLayout" name="layGoTo">
+         <item>
+          <widget class="QLineEdit" name="leGoTo">
+           <property name="placeholderText">
+            <string>Go to: place, postcode or grid ref</string>
+           </property>
+           <property name="clearButtonEnabled">
+            <bool>true</bool>
+           </property>
+           <property name="toolTip">
+            <string>A place name, a postcode, an OS grid reference (SU, SU12, SU 1427, SU 14567 27890, SU12NE) or an easting and northing (414360, 130135). Zooms there and adds the tiles covering it to the selection. Postcodes and places are looked up with postcodes.io (Royal Mail / OS open data).</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnGoTo">
+           <property name="text">
+            <string>Go</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QLabel" name="lblSelectHint">
+         <property name="text">
+          <string>or pick tiles, or draw your site, on the map:</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="layMapTools">
+         <item>
+          <widget class="QPushButton" name="btnPickTiles">
+           <property name="text">
+            <string>Pick on map</string>
+           </property>
+           <property name="toolTip">
+            <string>Click tiles on the map to add or remove them; drag a box to add every tile under it (any QGIS selection tool works too)</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnDrawArea">
+           <property name="text">
+            <string>Draw area</string>
+           </property>
+           <property name="toolTip">
+            <string>Drag a rectangle, or click the corners of a polygon (right-click or double-click to finish, Esc to start again). The tiles under the area are selected, and the area is kept as a layer to crop to.</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="laySelectButtons">
+         <item>
+          <widget class="QPushButton" name="btnSelectExtent">
+           <property name="text">
+            <string>Tiles in view</string>
+           </property>
+           <property name="toolTip">
+            <string>Select the tiles with data covering the current map view</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnClearSelection">
+           <property name="text">
+            <string>Clear</string>
+           </property>
+           <property name="toolTip">
+            <string>Clear the tile selection and remove the drawn area</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="layLayerSelect">
+         <item>
+          <widget class="QPushButton" name="btnSelectLayer">
+           <property name="text">
+            <string>Tiles under layer</string>
+           </property>
+           <property name="toolTip">
+            <string>Select the tiles with data that intersect the chosen layer (its selected features if it has any, otherwise all of them; the extent for rasters)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="chkCrop">
+         <property name="text">
+          <string>Crop to the chosen layer</string>
+         </property>
+         <property name="toolTip">
+          <string>Crop what's loaded, and mosaics you save, to the polygons of the layer chosen above (its selected features if it has any), e.g. your drawn area. Drawing an area ticks this.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="lblTileCount">
+         <property name="text">
+          <string>No tiles selected yet</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="chkShowGrid">
+         <property name="text">
+          <string>Show OSGB 5 km grid</string>
+         </property>
+         <property name="toolTip">
+          <string>The grid of 5 km tiles the data comes in. Tiles you have downloaded are shaded; squares with no data from any source (mostly sea, or Northern Ireland) have only a faint outline.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="chkCoverage">
+         <property name="text">
+          <string>Shade tiles that have the chosen data</string>
+         </property>
+         <property name="toolTip">
+          <string>Shade the tiles in the map view that have the chosen dataset but haven't been downloaded yet (with up to 1,600 tiles in view: zoom in if there are more)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="lblCoverageNote">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+         <property name="indent">
+          <number>20</number>
+         </property>
+         <property name="visible">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="grpDataset">
+      <property name="title">
+       <string>2. Choose the data</string>
+      </property>
+      <layout class="QVBoxLayout" name="layDataset">
+       <item>
+        <widget class="QLabel" name="lblAvailability">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="grpDownload">
+      <property name="title">
+       <string>3. Download</string>
+      </property>
+      <layout class="QVBoxLayout" name="layDownload">
+       <item>
+        <layout class="QHBoxLayout" name="layDownloadButtons">
+         <item>
+          <widget class="QPushButton" name="btnDownloadTiles">
+           <property name="text">
+            <string>Download selected tiles</string>
+           </property>
+           <property name="default">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnCancel">
+           <property name="text">
+            <string>Cancel</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="chkLoadAfterDownload">
+         <property name="text">
+          <string>Load the tiles when they're downloaded</string>
+         </property>
+         <property name="toolTip">
+          <string>Load the tiles as soon as they've downloaded (cropped too, when "Crop to" is ticked): download and load in one go</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnResume">
+         <property name="text">
+          <string>Resume unfinished downloads</string>
+         </property>
+         <property name="visible">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="progressBar">
+         <property name="value">
+          <number>0</number>
+         </property>
+         <property name="visible">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="lblStatus">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="grpUse">
+      <property name="title">
+       <string>4. Use downloaded tiles</string>
+      </property>
+      <layout class="QVBoxLayout" name="layUse">
+       <item>
+        <layout class="QHBoxLayout" name="layUseRow1">
+         <item>
+          <widget class="QPushButton" name="btnLoadSelected">
+           <property name="text">
+            <string>Load selected</string>
+           </property>
+           <property name="toolTip">
+            <string>Add the selected tiles of the chosen dataset to the project, as one seamless mosaic per dataset (cropped when "Crop to" is ticked)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnCreateVRT">
+           <property name="text">
+            <string>Create mosaic...</string>
+           </property>
+           <property name="toolTip">
+            <string>Save the selected tiles as one file: a VRT (a small file that reads the tiles) or a GeoTIFF copy; for point clouds, a virtual point cloud. Cropped when "Crop to" is ticked.</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="layUseRow2">
+         <item>
+          <widget class="QPushButton" name="btnSurveyDates">
+           <property name="text">
+            <string>Survey dates</string>
+           </property>
+           <property name="toolTip">
+            <string>Show when the ground in the selected tiles was actually flown (England's Composite DTM/DSM: the surveys merged into each tile, from the metadata that comes with it), coloured by year</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnMyDownloads">
+           <property name="text">
+            <string>My downloads...</string>
+           </property>
+           <property name="toolTip">
+            <string>Everything in the download folder: space per survey; show on the grid, load, open or delete</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="grpFolder">
+      <property name="title">
+       <string>Download folder</string>
+      </property>
+      <layout class="QVBoxLayout" name="layFolder">
+       <item>
+        <layout class="QHBoxLayout" name="layDir">
+         <item>
+          <widget class="QLineEdit" name="leDownloadDir"/>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnBrowse">
+           <property name="text">
+            <string>Browse...</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnOpenFolder">
+           <property name="text">
+            <string>Open</string>
+           </property>
+           <property name="toolTip">
+            <string>Open the download folder in your file manager</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="layZips">
+         <item>
+          <widget class="QCheckBox" name="chkDeleteZips">
+           <property name="text">
+            <string>Delete zips after extracting</string>
+           </property>
+           <property name="toolTip">
+            <string>Permanently deletes each zip once its tile has extracted successfully. Saves disk space: each zip is about the same size as its extracted tile. Tiles whose zip was deleted still count as downloaded.</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnTidyZips">
+           <property name="text">
+            <string>Delete extracted zips...</string>
+           </property>
+           <property name="toolTip">
+            <string>Lists the zip files in the download folder whose tiles are fully extracted, and asks before permanently deleting them</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="grpLegend">
+      <property name="title">
+       <string>Legend</string>
+      </property>
+      <property name="visible">
+       <bool>false</bool>
+      </property>
+      <layout class="QVBoxLayout" name="layLegend">
+       <item>
+        <widget class="QLabel" name="lblLegend">
+         <property name="toolTip">
+          <string>How the grid is shaded: which tiles you have downloaded for the chosen dataset</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <spacer name="spacerBottom">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>0</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

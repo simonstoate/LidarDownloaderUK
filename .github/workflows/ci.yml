@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install flake8 pytest bandit detect-secrets
+      - run: flake8 lidar_downloader_uk tests tools
+      - run: pytest -q
+      # plugins.qgis.org scans every upload with these and blocks it if they find anything: catch it here first
+      - name: Security scans (Bandit, detect-secrets)
+        run: |
+          bandit -r lidar_downloader_uk -q
+          detect-secrets scan lidar_downloader_uk > secrets.json
+          python -c "import json, sys; found = json.load(open('secrets.json'))['results']; print(found or 'no secrets'); sys.exit(1 if found else 0)"
+
+  qgis:
+    # Runs the plugin inside real QGIS: Qt5 builds (3.x) and a Qt6 build (4.x)
+    name: QGIS ${{ matrix.qgis }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.22 = qgisMinimumVersion in metadata.txt
+        qgis: ["3.22", "3.34", "3.40", "3.44", "4.2"]
+    container: qgis/qgis:${{ matrix.qgis }}
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tests/smoke_test_qgis.py

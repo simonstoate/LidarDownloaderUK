@@ -1,0 +1,616 @@
+{
+ "result": [
+  {
+   "name": "scotland-gov/lidar/phase-1/dtm",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase I DTM",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: Crown copyright Scottish Government, SEPA and Scottish Water (2012). Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2012-05-31T23:59:59Z",
+     "begin": "2011-03-01T00:00:00Z"
+    },
+    "datasetReferenceDate": "2016-11-15"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-1/laz",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase I LAS (LAZ)",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: Crown copyright Scottish Government, SEPA and Scottish Water (2012). Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2012-05-31T23:59:59Z",
+     "begin": "2011-03-01T00:00:00Z"
+    },
+    "datasetReferenceDate": "2016-11-15"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-2/dsm",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase II DSM",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: Copyright Scottish Government and SEPA (2014). Fugro retain the commercial copyright. Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2014-04-18T23:59:59Z",
+     "begin": "2012-11-29T00:00:00Z"
+    },
+    "datasetReferenceDate": "2016-11-15"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-2/dtm",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase II DTM",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: Copyright Scottish Government and SEPA (2014). Fugro retain the commercial copyright. Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2014-04-18T23:59:59Z",
+     "begin": "2012-11-29T00:00:00Z"
+    },
+    "datasetReferenceDate": "2016-11-15"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-1/dsm",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase I DSM",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: Crown copyright Scottish Government, SEPA and Scottish Water (2012). Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2012-05-31T23:59:59Z",
+     "begin": "2011-03-01T00:00:00Z"
+    },
+    "datasetReferenceDate": "2016-11-15"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-2/laz",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase II LAS (LAZ)",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: Copyright Scottish Government and SEPA (2014). Fugro retain the commercial copyright. Non-Commercial Government Licence",
+    "temporalExtent": {
+     "end": "2014-04-18T23:59:59Z",
+     "begin": "2012-11-29T00:00:00Z"
+    },
+    "datasetReferenceDate": "2016-11-15"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/ogc",
+   "metadata": {
+    "title": "LiDAR for Scotland OGC Web Services",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: Crown copyright Scottish Government, SEPA and Scottish Water (2012). Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2014-04-18T23:59:59Z",
+     "begin": "2011-03-01T00:00:00Z"
+    },
+    "datasetReferenceDate": "2018-10-24"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-3/dtm",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase III DTM",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: Copyright Scottish Government and SEPA (2014). Fugro retain the commercial copyright. Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2014-04-18T23:59:59Z",
+     "begin": "2012-11-29T00:00:00Z"
+    },
+    "datasetReferenceDate": "2016-11-15"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-3/dsm",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase III DSM",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: Copyright Scottish Government and SEPA (2014). Fugro retain the commercial copyright. Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2014-04-18T23:59:59Z",
+     "begin": "2012-11-29T00:00:00Z"
+    },
+    "datasetReferenceDate": "2016-11-15"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-3/laz",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase III LAS (LAZ)",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: Copyright Scottish Government and SEPA (2014). Fugro retain the commercial copyright. Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2014-04-18T23:59:59Z",
+     "begin": "2012-11-29T00:00:00Z"
+    },
+    "datasetReferenceDate": "2016-11-15"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-4/dsm",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase IV DSM",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2019-12-31",
+     "begin": "2017-01-01"
+    },
+    "datasetReferenceDate": "2010-12-08"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-4/dtm",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase IV DTM",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2019-12-31",
+     "begin": "2017-01-01"
+    },
+    "datasetReferenceDate": "2010-12-08"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-4/laz",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase IV LAS (LAZ)",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2019-12-31",
+     "begin": "2017-01-01"
+    },
+    "datasetReferenceDate": "2010-12-08"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/outerheb-2019/dsm/50cm",
+   "metadata": {
+    "title": "LiDAR for Outer Hebrides 2019 - 50cm DSM",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: \u00a9 SEPA (2019). Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2019-01-01T00:00:00Z",
+     "begin": "2019-12-31T23:59:59Z"
+    },
+    "datasetReferenceDate": "2021-04-01"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/outerheb-2019/dtm/50cm",
+   "metadata": {
+    "title": "LiDAR for Outer Hebrides 2019 - 50cm DTM",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: \u00a9 SEPA (2019). Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2019-01-01T00:00:00Z",
+     "begin": "2019-12-31T23:59:59Z"
+    },
+    "datasetReferenceDate": "2021-04-01"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/outerheb-2019/dsm/25cm",
+   "metadata": {
+    "title": "LiDAR for Outer Hebrides 2019 - 25cm DSM",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: \u00a9 SEPA (2019). Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2019-01-01T00:00:00Z",
+     "begin": "2019-12-31T23:59:59Z"
+    },
+    "datasetReferenceDate": "2021-04-01"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/outerheb-2019/dtm/25cm",
+   "metadata": {
+    "title": "LiDAR for Outer Hebrides 2019 - 25cm DTM",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: \u00a9 SEPA (2019). Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2019-01-01T00:00:00Z",
+     "begin": "2019-12-31T23:59:59Z"
+    },
+    "datasetReferenceDate": "2021-04-01"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/outerheb-2019/laz/4ppm",
+   "metadata": {
+    "title": "LiDAR for Outer Hebrides 2019 - 4 PPM LAS (LAZ)",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: \u00a9 SEPA (2019). Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2019-01-01T00:00:00Z",
+     "begin": "2019-12-31T23:59:59Z"
+    },
+    "datasetReferenceDate": "2021-04-01"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/outerheb-2019/laz/16ppm",
+   "metadata": {
+    "title": "LiDAR for Outer Hebrides 2019 - 16 PPM LAS (LAZ)",
+    "useConstraints": "The following attribution statement must be used to acknowledge the source of the information: \u00a9 SEPA (2019). Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2019-01-01T00:00:00Z",
+     "begin": "2019-12-31T23:59:59Z"
+    },
+    "datasetReferenceDate": "2021-04-01"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2010/laz/dsm",
+   "metadata": {
+    "title": "HES LiDAR Data Stirling City and surrounding area (2010) LAZ_DSM",
+    "useConstraints": "No limitations on access as long as the use is for non-commercial purposes. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time) Non-Commercial Government Licence (nationalarchives.gov.uk). HES will not allow the use of the Project Data by third parties for any other purpose (including, without limitation, any commercial purpose). Use of this data must be acknowledged with the following: HES licence this data for non-commercial use only as permitted by Fugro, the owners of the data. This data remains the property of Fugro and can only be used for non-commercial use as licenced by HES through a non-commercial government licence.",
+    "temporalExtent": {
+     "end": "2010-12-31",
+     "begin": "2010-01-01"
+    },
+    "datasetReferenceDate": "2022-05-31"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2010/laz/dtm",
+   "metadata": {
+    "title": "HES LiDAR Data Stirling City and surrounding area (2010) LAZ_DTM",
+    "useConstraints": "No limitations on access as long as the use is for non-commercial purposes. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time) Non-Commercial Government Licence (nationalarchives.gov.uk). HES will not allow the use of the Project Data by third parties for any other purpose (including, without limitation, any commercial purpose). Use of this data must be acknowledged with the following: HES licence this data for non-commercial use only as permitted by Fugro, the owners of the data. This data remains the property of Fugro and can only be used for non-commercial use as licenced by HES through a non-commercial government licence.",
+    "temporalExtent": {
+     "end": "2010-12-31",
+     "begin": "2010-01-01"
+    },
+    "datasetReferenceDate": "2022-05-31"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-5/dsm",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase V DSM",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2020-05-28",
+     "begin": "2021-04-12"
+    },
+    "datasetReferenceDate": "2021-09-17"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-5/dtm",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase V DTM",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2020-05-28",
+     "begin": "2021-04-12"
+    },
+    "datasetReferenceDate": "2021-09-17"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-5/laz",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase V LAS (LAZ)",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2020-05-28",
+     "begin": "2021-04-12"
+    },
+    "datasetReferenceDate": "2020-09-17"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2010/dtm",
+   "metadata": {
+    "title": "HES LiDAR Data Stirling City and surrounding area (2010) DTM",
+    "useConstraints": "No limitations on access as long as the use is for non-commercial purposes. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time) Non-Commercial Government Licence (nationalarchives.gov.uk). HES will not allow the use of the Project Data by third parties for any other purpose (including, without limitation, any commercial purpose). Use of this data must be acknowledged with the following: HES licence this data for non-commercial use only as permitted by Fugro, the owners of the data. This data remains the property of Fugro and can only be used for non-commercial use as licenced by HES through a non-commercial government licence.",
+    "temporalExtent": {
+     "end": "2010-12-31",
+     "begin": "2010-01-01"
+    },
+    "datasetReferenceDate": "2022-05-31"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2010s10/laz/dsm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Scottish Ten Project (2010) LAZ_DSM",
+    "useConstraints": "No limitations on access as long as the use is for non-commercial purposes. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time (please refer to this document linked below) Non-Commercial Government Licence (nationalarchives.gov.uk) HES will not allow the use of the Project Data by third parties for any other purpose (including, without limitation, any commercial purpose). This data remains the property of Fugro and can only be used for non-commercial use as licenced by HES through a non-commercial government licence. Use of this data must be acknowledged with the following: HES licence this data for non-commercial use only as permitted by Fugro, the owners of the data. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time (please refer to the document referenced below). Non-Commercial Government Licence (nationalarchives.gov.uk). HES will not allow the use of this Data by third parties for any other purpose (including, without limitation, any commercial purpose).",
+    "temporalExtent": {
+     "end": "2012-07-27",
+     "begin": "2010-06-08"
+    },
+    "datasetReferenceDate": "2022-10-19T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2016/dtm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Projects (2016) DTM",
+    "useConstraints": "No limitations to public access. IPR is held by Historic Environment Scotland (HES) Conditions on use of any of this data are as listed for an Open Government Licence, please reference that document before using the data: Open Government Licence v3 (nationalarchives.gov.uk) Please acknowledge the source of the information using the following attribution statement: \u00a9 HES (2021).",
+    "temporalExtent": {
+     "end": "2017-12-31",
+     "begin": "2016-01-01"
+    },
+    "datasetReferenceDate": "2022-08-10T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2010/dsm",
+   "metadata": {
+    "title": "HES LiDAR Data Stirling City and surrounding area (2010) DSM",
+    "useConstraints": "No limitations on access as long as the use is for non-commercial purposes. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time) Non-Commercial Government Licence (nationalarchives.gov.uk). HES will not allow the use of the Project Data by third parties for any other purpose (including, without limitation, any commercial purpose). Use of this data must be acknowledged with the following: HES licence this data for non-commercial use only as permitted by Fugro, the owners of the data. This data remains the property of Fugro and can only be used for non-commercial use as licenced by HES through a non-commercial government licence.",
+    "temporalExtent": {
+     "end": "2010-12-31",
+     "begin": "2010-01-01"
+    },
+    "datasetReferenceDate": "2022-05-31"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2010s10/dsm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Scottish Ten Project (2010) DSM",
+    "useConstraints": "No limitations on access as long as the use is for non-commercial purposes. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time (please refer to this document linked below) Non-Commercial Government Licence (nationalarchives.gov.uk) HES will not allow the use of the Project Data by third parties for any other purpose (including, without limitation, any commercial purpose). This data remains the property of Fugro and can only be used for non-commercial use as licenced by HES through a non-commercial government licence. Use of this data must be acknowledged with the following: HES licence this data for non-commercial use only as permitted by Fugro, the owners of the data. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time (please refer to the document referenced below). Non-Commercial Government Licence (nationalarchives.gov.uk). HES will not allow the use of this Data by third parties for any other purpose (including, without limitation, any commercial purpose).",
+    "temporalExtent": {
+     "end": "2012-07-27",
+     "begin": "2010-06-08"
+    },
+    "datasetReferenceDate": "2022-10-19T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2010s10/dtm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Scottish Ten Project (2010) DTM",
+    "useConstraints": "No limitations on access as long as the use is for non-commercial purposes. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time (please refer to this document linked below) Non-Commercial Government Licence (nationalarchives.gov.uk) HES will not allow the use of the Project Data by third parties for any other purpose (including, without limitation, any commercial purpose). This data remains the property of Fugro and can only be used for non-commercial use as licenced by HES through a non-commercial government licence. Use of this data must be acknowledged with the following: HES licence this data for non-commercial use only as permitted by Fugro, the owners of the data. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time (please refer to the document referenced below). Non-Commercial Government Licence (nationalarchives.gov.uk). HES will not allow the use of this Data by third parties for any other purpose (including, without limitation, any commercial purpose).",
+    "temporalExtent": {
+     "end": "2012-07-27",
+     "begin": "2010-06-08"
+    },
+    "datasetReferenceDate": "2022-10-19T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2010s10/laz/dtm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Scottish Ten Project (2010) LAZ_DTM",
+    "useConstraints": "No limitations on access as long as the use is for non-commercial purposes. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time (please refer to this document linked below) Non-Commercial Government Licence (nationalarchives.gov.uk) HES will not allow the use of the Project Data by third parties for any other purpose (including, without limitation, any commercial purpose). This data remains the property of Fugro and can only be used for non-commercial use as licenced by HES through a non-commercial government licence. Use of this data must be acknowledged with the following: HES licence this data for non-commercial use only as permitted by Fugro, the owners of the data. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time (please refer to the document referenced below). Non-Commercial Government Licence (nationalarchives.gov.uk). HES will not allow the use of this Data by third parties for any other purpose (including, without limitation, any commercial purpose).",
+    "temporalExtent": {
+     "end": "2012-07-27",
+     "begin": "2010-06-08"
+    },
+    "datasetReferenceDate": "2022-10-19T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2016-2017/dsm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Projects (2016-2017 sub project 4) DSM",
+    "useConstraints": "No limitations to public access. Fugro have granted HES a non-exclusive, royalty free, and perpetual right to license the Project Data to third party individuals and organisations for non-commercial purposes only, including, but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time) Non-Commercial Government Licence (nationalarchives.gov.uk). HES will not allow the use of the Project Data by third parties for any other purpose (including, without limitation, any commercial purpose). Use of this data must be acknowledged with the following: HES licence this data for non-commercial use only as permitted by Fugro, the owners of the data. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time (please refer to the document referenced below) Non-Commercial Government Licence (nationalarchives.gov.uk) HES will not allow the use of this Data by third parties for any other purpose (including, without limitation, any commercial purpose). This data remains the property of Fugro and can only be used for non-commercial use as licenced by HES through a non-commercial government licence.",
+    "temporalExtent": {
+     "end": "2017-12-31",
+     "begin": "2016-01-01"
+    },
+    "datasetReferenceDate": "2022-10-14T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2016-2017/dtm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Projects (2016-2017 sub project 4) DTM",
+    "useConstraints": "No limitations to public access. Fugro have granted HES a non-exclusive, royalty free, and perpetual right to license the Project Data to third party individuals and organisations for non-commercial purposes only, including, but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time) Non-Commercial Government Licence (nationalarchives.gov.uk). HES will not allow the use of the Project Data by third parties for any other purpose (including, without limitation, any commercial purpose). Use of this data must be acknowledged with the following: HES licence this data for non-commercial use only as permitted by Fugro, the owners of the data. Fugro have granted HES a non-exclusive royalty free and perpetual right to licence this data to 3rd parties, individuals and organisations for non-commercial purposes only, including but not limited to, research and educational purposes on the basis, and under the terms and conditions of the Non-Commercial Government Licence developed by the National Archives (as amended from time to time (please refer to the document referenced below) Non-Commercial Government Licence (nationalarchives.gov.uk) HES will not allow the use of this Data by third parties for any other purpose (including, without limitation, any commercial purpose). This data remains the property of Fugro and can only be used for non-commercial use as licenced by HES through a non-commercial government licence.",
+    "temporalExtent": {
+     "end": "2017-12-31",
+     "begin": "2016-01-01"
+    },
+    "datasetReferenceDate": "2022-10-14T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2016/dsm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Projects (2016) DSM",
+    "useConstraints": "No limitations to public access. IPR is held by Historic Environment Scotland (HES) Conditions on use of any of this data are as listed for an Open Government Licence, please reference that document before using the data: Open Government Licence v3 (nationalarchives.gov.uk) Please acknowledge the source of the information using the following attribution statement: \u00a9 HES (2021).",
+    "temporalExtent": {
+     "end": "2017-12-31",
+     "begin": "2016-01-01"
+    },
+    "datasetReferenceDate": "2022-08-10T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2017sp3/dsm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Project (2017 Sub Project 3) DSM",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2017-12-31",
+     "begin": "2017-01-01"
+    },
+    "datasetReferenceDate": "2022-10-27T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2017sp3/dtm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Project (2017 Sub Project 3) DTM",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2017-12-31",
+     "begin": "2017-01-01"
+    },
+    "datasetReferenceDate": "2022-10-27T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2017/dsm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Projects (2017) DSM",
+    "useConstraints": "No Limitations on Access, IPR is held by Historic Environment Scotland. IPR is held by Historic Environment Scotland. Conditions on use of any of this data are as listed for an Open Government Licence, please reference that document before using the data: Open Government Licence v3 (nationalarchives.gov.uk) If this data is reproduced it must be attributed with the following: Contains Historic Environment Scotland data \u00a9 Historic Environment Scotland - Scottish Charity No. SC045925 \u00a9 Crown copyright and database right [year].",
+    "temporalExtent": {
+     "end": "2018-12-31",
+     "begin": "2017-01-01"
+    },
+    "datasetReferenceDate": "2022-08-26T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2017/dtm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Projects (2017) DTM",
+    "useConstraints": "No Limitations on Access, IPR is held by Historic Environment Scotland. IPR is held by Historic Environment Scotland. Conditions on use of any of this data are as listed for an Open Government Licence, please reference that document before using the data: Open Government Licence v3 (nationalarchives.gov.uk) If this data is reproduced it must be attributed with the following: Contains Historic Environment Scotland data \u00a9 Historic Environment Scotland - Scottish Charity No. SC045925 \u00a9 Crown copyright and database right [year].",
+    "temporalExtent": {
+     "end": "2018-12-31",
+     "begin": "2017-01-01"
+    },
+    "datasetReferenceDate": "2022-08-26T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-luing/laz",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Projects Isle of Luing LAZ",
+    "useConstraints": "Non-Commercial Government Licence",
+    "temporalExtent": {
+     "end": "2020-09-09",
+     "begin": "2020-09-09"
+    },
+    "datasetReferenceDate": "2022-07-07T09:14:33"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-2017sp3/laz",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Project (2017 Sub Project 3) LAZ",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2017-12-31",
+     "begin": "2017-01-01"
+    },
+    "datasetReferenceDate": "2022-10-27T17:00:00"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-6/dsm",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase VI DSM",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2022-03-31",
+     "begin": "2021-04-01"
+    },
+    "datasetReferenceDate": "2023-03-24"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-6/dtm",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase VI DTM",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2022-03-31",
+     "begin": "2021-04-01"
+    },
+    "datasetReferenceDate": "2023-03-24"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/phase-6/laz",
+   "metadata": {
+    "title": "LiDAR for Scotland Phase VI LAS (LAZ)",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2022-03-31",
+     "begin": "2021-04-01"
+    },
+    "datasetReferenceDate": "2023-03-24"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-luing/dsm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Projects Isle of Luing DSM",
+    "useConstraints": "Non-Commercial Government Licence",
+    "temporalExtent": {
+     "end": "2020-09-09",
+     "begin": "2020-09-09"
+    },
+    "datasetReferenceDate": "2022-07-07T09:14:33"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/hes/hes-luing/dtm",
+   "metadata": {
+    "title": "LiDAR for Historic Environment Scotland Projects Isle of Luing DTM",
+    "useConstraints": "Non-Commercial Government Licence",
+    "temporalExtent": {
+     "end": "2020-09-09",
+     "begin": "2020-09-09"
+    },
+    "datasetReferenceDate": "2022-07-07T09:14:33"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/orkney-islands-council-23/laz",
+   "metadata": {
+    "title": "LiDAR for Orkney Islands Council 2023 LAZ",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2023-06-14",
+     "begin": "2023-06-10"
+    },
+    "datasetReferenceDate": "2026-03-05"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/orkney-islands-council-23/dsm",
+   "metadata": {
+    "title": "LiDAR for Orkney Islands Council 2023 DSM",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2023-06-14",
+     "begin": "2023-06-10"
+    },
+    "datasetReferenceDate": "2026-03-05"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/orkney-islands-council-23/dtm",
+   "metadata": {
+    "title": "LiDAR for Orkney Islands Council 2023 DTM",
+    "useConstraints": "Open Government Licence v3",
+    "temporalExtent": {
+     "end": "2023-06-14",
+     "begin": "2023-06-10"
+    },
+    "datasetReferenceDate": "2026-03-05"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/national-lidar-programme/dtm",
+   "metadata": {
+    "title": "Scottish National LiDAR Programme DTM",
+    "useConstraints": "No limitations to public access. Open Government Licence v3. The following attribution statement must be used to acknowledge the source of the information: Crown copyright Scottish Government \u00a9 Crown copyright and database right (2025).",
+    "temporalExtent": {
+     "end": "2025-12-31",
+     "begin": "2025-05-19"
+    },
+    "datasetReferenceDate": "2026-01-29"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/national-lidar-programme/laz",
+   "metadata": {
+    "title": "Scottish National LiDAR Programme LAZ",
+    "useConstraints": "No limitations to public access. Open Government Licence v3. The following attribution statement must be used to acknowledge the source of the information: Crown copyright Scottish Government \u00a9 Crown copyright and database right (2025).",
+    "temporalExtent": {
+     "end": "2025-12-31",
+     "begin": "2025-05-19"
+    },
+    "datasetReferenceDate": "2026-01-29"
+   }
+  },
+  {
+   "name": "scotland-gov/lidar/national-lidar-programme/dsm",
+   "metadata": {
+    "title": "Scottish National LiDAR Programme DSM",
+    "useConstraints": "No limitations to public access. Open Government Licence v3. The following attribution statement must be used to acknowledge the source of the information: Crown copyright Scottish Government \u00a9 Crown copyright and database right (2025).",
+    "temporalExtent": {
+     "end": "2025-12-31",
+     "begin": "2025-05-19"
+    },
+    "datasetReferenceDate": "2026-01-29"
+   }
+  }
+ ]
+}

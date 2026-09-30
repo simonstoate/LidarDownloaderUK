@@ -1,0 +1,6 @@
+# For the code scan on plugins.qgis.org, which runs flake8 on the plugin with its defaults (79-character lines)
+# unless the plugin brings its own settings. The project's own checks are in setup.cfg in the repository: lines up
+# to 120 characters, and no complexity limit. The scan can't be given a line length, so line length (E501) is left
+# to the project's checks, and complexity (C901) isn't reported.
+[flake8]
+extend-ignore = E501, C901

@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Build artefacts
+*.zip
+
+# Editors, tools, OS
+.vscode/
+.idea/
+.claude/
+Thumbs.db
+.DS_Store
+
+# SQLite side files QGIS creates while the grid GeoPackage is open
+*.gpkg-wal
+*.gpkg-shm
+*.part
+
+# GDAL side-car files created when test rasters are opened
+*.aux.xml

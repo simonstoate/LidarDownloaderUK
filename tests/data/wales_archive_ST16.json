@@ -1,0 +1,310 @@
+{
+ "features": [
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.1",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0000877    ",
+    "gb_ng": "ST1666  ",
+    "date_flown": "28-March-1998",
+    "resolution": 2,
+    "dsm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_1998_dsm.zip",
+    "dtm_url": "",
+    "_10k": "ST16 ",
+    "year": "1998",
+    "id": 1
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.4",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0000878    ",
+    "gb_ng": "ST1668  ",
+    "date_flown": "28-March-1998",
+    "resolution": 2,
+    "dsm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_1998_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_1998_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "1998",
+    "id": 4
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.8",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0000882    ",
+    "gb_ng": "ST1866  ",
+    "date_flown": "28-March-1998",
+    "resolution": 2,
+    "dsm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_1998_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_1998_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "1998",
+    "id": 8
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.9",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0000883    ",
+    "gb_ng": "ST1868  ",
+    "date_flown": "28-March-1998",
+    "resolution": 2,
+    "dsm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_1998_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_1998_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "1998",
+    "id": 9
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.272",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0011666    ",
+    "gb_ng": "ST1868  ",
+    "date_flown": "4th-June-2000",
+    "resolution": 2,
+    "dsm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_2000_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_2000_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2000",
+    "id": 272
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.4269",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0060496    ",
+    "gb_ng": "ST1466  ",
+    "date_flown": "6-March-2006",
+    "resolution": 2,
+    "dsm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_2006_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_2006_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2006",
+    "id": 4269
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.4270",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0060497    ",
+    "gb_ng": "ST1468  ",
+    "date_flown": "6-March-2006",
+    "resolution": 2,
+    "dsm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_2006_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_2006_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2006",
+    "id": 4270
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.4274",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0060501    ",
+    "gb_ng": "ST1666  ",
+    "date_flown": "6-March-2006",
+    "resolution": 2,
+    "dsm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_2006_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_2006_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2006",
+    "id": 4274
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.4275",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0060502    ",
+    "gb_ng": "ST1668  ",
+    "date_flown": "6-March-2006",
+    "resolution": 2,
+    "dsm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_2006_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_2006_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2006",
+    "id": 4275
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.4279",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0060506    ",
+    "gb_ng": "ST1868  ",
+    "date_flown": "6-March-2006",
+    "resolution": 2,
+    "dsm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_2006_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/2m_res_ST16_2006_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2006",
+    "id": 4279
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.5227",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0064727    ",
+    "gb_ng": "ST1866  ",
+    "date_flown": "Dec-05---Jan-06",
+    "resolution": 1,
+    "dsm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2005_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2005_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2005-2006",
+    "id": 5227
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.5228",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0064729    ",
+    "gb_ng": "ST1668  ",
+    "date_flown": "Dec-05---Jan-06",
+    "resolution": 1,
+    "dsm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2005_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2005_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2005-2006",
+    "id": 5228
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.5229",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0064730    ",
+    "gb_ng": "ST1868  ",
+    "date_flown": "Dec-05---Jan-06",
+    "resolution": 1,
+    "dsm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2005_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2005_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2005-2006",
+    "id": 5229
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.11088",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0138295    ",
+    "gb_ng": "ST1466  ",
+    "date_flown": "20-Jan-2011",
+    "resolution": 1,
+    "dsm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2011_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2011_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2011",
+    "id": 11088
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.11089",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0138296    ",
+    "gb_ng": "ST1468  ",
+    "date_flown": "20-Jan-2011",
+    "resolution": 1,
+    "dsm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2011_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2011_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2011",
+    "id": 11089
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.11091",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0138298    ",
+    "gb_ng": "ST1666  ",
+    "date_flown": "20-Jan-2011",
+    "resolution": 1,
+    "dsm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2011_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2011_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2011",
+    "id": 11091
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.11092",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0138299    ",
+    "gb_ng": "ST1668  ",
+    "date_flown": "20-Jan-2011",
+    "resolution": 1,
+    "dsm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2011_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2011_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2011",
+    "id": 11092
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "nrw_lidar_tile_catalogue_archive.11093",
+   "geometry": null,
+   "geometry_name": "geom",
+   "properties": {
+    "lidar_name": "D0138300    ",
+    "gb_ng": "ST1868  ",
+    "date_flown": "20-Jan-2011",
+    "resolution": 1,
+    "dsm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2011_dsm.zip",
+    "dtm_url": "lle.blob.core.windows.net/lidar/1m_res_ST16_2011_dtm.zip",
+    "_10k": "ST16 ",
+    "year": "2011",
+    "id": 11093
+   }
+  }
+ ]
+}
