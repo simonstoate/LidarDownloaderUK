@@ -8,18 +8,20 @@ import threading
 import time
 import zipfile
 
-from qgis.PyQt.QtCore import QByteArray, QFile, QIODevice, QUrl, pyqtSignal, pyqtSlot
+from qgis.PyQt.QtCore import QByteArray, QFile, QIODevice, QTimer, QUrl, pyqtSignal, pyqtSlot
 from qgis.PyQt.QtNetwork import QNetworkRequest
-from qgis.core import (Qgis, QgsBlockingNetworkRequest, QgsFeedback, QgsMessageLog, QgsProcessingContext,
-                       QgsProcessingFeedback, QgsTask)
+from qgis.core import Qgis, QgsBlockingNetworkRequest, QgsFeedback, QgsMessageLog, QgsTask
 
-from . import api, places, pointclouds, postprocess, sources, storage
+from . import api, places, postprocess, sources, storage
 
 LOG_TAG = 'LIDAR Downloader UK'  # the Log Messages tab, as the plugin names it
 MAX_ATTEMPTS = 3
 RETRY_DELAYS = (5, 15)  # seconds to wait before the 2nd and 3rd attempts
 # Statuses the service uses for "no such tile" / "not allowed": retrying won't help
 PERMANENT_HTTP_ERRORS = (400, 401, 403, 404, 500)
+# QGIS finishes a parallel download within a few hundredths of a second of its last part: one it hasn't finished
+# this long after, its task manager has lost (see ParallelDownloadTask._part_finished)
+LOST_DOWNLOAD_MS = 2000
 
 
 class ServiceHealth:
@@ -226,11 +228,9 @@ class DownloadTilesTask(QgsTask):
                 self._status(f"{label}: extracting...")
                 try:
                     storage.extract_file_zip(path)
-                    # NRW's archive grids are in millimetres: made metres, like everything else
-                    postprocess.convert_mm_grids(os.path.dirname(path))
                 except zipfile.BadZipFile:
                     return f'{ref.name}: downloaded file was not a valid zip'
-                except (OSError, RuntimeError) as e:
+                except OSError as e:
                     return f'{ref.name}: extraction failed: {e}'
                 if self.delete_zips:
                     storage.remove_quietly(path)
@@ -357,8 +357,8 @@ class ParallelDownloadTask(QgsTask):
         self.parts = []
         health = ServiceHealth()  # shared: once a service isn't answering, the other parts skip it too
         for share in (s for s in shares if s):
-            part = DownloadTilesTask(share, download_dir, reuse_existing, delete_zips, None, dataset, urls, folders,
-                                     files, health, part_of_batch=True)
+            part = DownloadTilesTask(share, download_dir, reuse_existing, delete_zips, self._part_finished, dataset,
+                                     urls, folders, files, health, part_of_batch=True)
             # Connected here, on the UI thread, to real slots (never a lambda from a worker thread)
             part.statusMessage.connect(self._on_status)
             part.tileFinished.connect(self._on_tile_finished)
@@ -367,6 +367,10 @@ class ParallelDownloadTask(QgsTask):
 
         self._results = None
         self._details = None
+        self._parts_running = len(self.parts)
+        self._parts_completed = True
+        self._rescued = None  # the result to report if QGIS's task manager loses this task (see _part_finished)
+        self._reported = False
 
     @property
     def results(self):
@@ -394,48 +398,43 @@ class ParallelDownloadTask(QgsTask):
     def _on_tile_finished(self, tile):
         self.done += 1
 
+    def _part_finished(self, part, completed):
+        """QGIS calls this (on the UI thread) as each part ends. Once all have, QGIS should run this task and finish
+        it, but its task manager now and then loses a task that waits for subtasks: it never runs, and the panel
+        would stay busy until cancelled. So if it isn't finished soon after its last part, it's finished here."""
+        self._parts_running -= 1
+        self._parts_completed = self._parts_completed and completed
+        if not self._parts_running:
+            QTimer.singleShot(LOST_DOWNLOAD_MS, self._rescue)
+
+    @pyqtSlot()
+    def _rescue(self):
+        if self._reported:
+            return
+        self._rescued = self._parts_completed and not self.isCanceled()
+        # Cancelling a task that never started makes QGIS finish it straight away (calling finished() below) and
+        # take it off its task list
+        self.cancel()
+        if not self._reported:  # it was running after all, or isn't in a task manager
+            self.finished(self._rescued)
+
     def run(self):
         # Runs once every part has finished
         return not self.isCanceled()
 
     def finished(self, result):
+        # By QGIS when run() returns or the task is cancelled, or by _rescue: only the first call counts
+        if self._reported:
+            return
+        self._reported = True
+        if self._rescued is not None:
+            result = self._rescued
         # Keep plain results and let go of the parts: QGIS deletes them with this task
         self._results = self.results
         self._details = self.details
+        for part in self.parts:
+            part.on_finished = None
         self.parts = []
-        if self.on_finished:
-            self.on_finished(self, result)
-
-
-class ClipPointCloudTask(QgsTask):
-    """Crop a point cloud to an area (a GeoJSON file, removed afterwards) as a COPC file, in the background. It
-    runs QGIS's PDAL tool with its own Processing context (the project and map canvas belong to the UI thread)
-    and a feedback that Cancel stops. self.result is the output path; self.error says why it failed."""
-
-    def __init__(self, source, area_file, output, description, on_finished=None):
-        super().__init__(description)
-        self.source, self.area_file, self.output = source, area_file, output
-        self.on_finished = on_finished
-        self.feedback = QgsProcessingFeedback()
-        self.result = None
-        self.error = None
-
-    def cancel(self):
-        self.feedback.cancel()
-        super().cancel()
-
-    def run(self):
-        try:
-            self.result = pointclouds.clip(self.source, self.area_file, self.output, context=QgsProcessingContext(),
-                                           feedback=self.feedback)
-            return not self.isCanceled()
-        except Exception as e:  # never let an unexpected error take QGIS down
-            self.error = str(e)
-            return False
-        finally:
-            postprocess.remove_file(self.area_file)
-
-    def finished(self, result):
         if self.on_finished:
             self.on_finished(self, result)
 

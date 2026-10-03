@@ -234,7 +234,11 @@ A review of the code as an open-source project, and of what plugins.qgis.org che
   older QGIS 3 versions)
 - [x] v0.14.5: metadata follows the plugin site's QGIS 4 rules (`qgisMaximumVersion=4.99`, no `supportsQt6`)
 - [x] Make the repository public (Issues on), then submit to plugins.qgis.org (as experimental first)
-- [ ] Approved on plugins.qgis.org; check it installs from the Plugin Manager (with experimental plugins shown)
+- [x] Approved on plugins.qgis.org: live, as experimental, since 2 October 2026 (0.14.5)
+- [x] v0.14.6: changes from first live use: a layer per 5 km tile, read as downloaded (only "Create mosaic" and
+  "Crop to" join tiles); a simpler, shorter panel (select / deselect icons, sections that fold up); a choice of
+  what happens after a download; "Crop to" downloads only the tiles the crop needs; fixes (the data menu follows
+  the nation, Northern Ireland's links, night aerial photos, downloads that stayed busy)
 
 ## Companion plugin (planned)
 

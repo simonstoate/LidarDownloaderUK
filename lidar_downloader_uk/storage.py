@@ -203,8 +203,9 @@ def folder_size(path):
     return total
 
 
-def download_summary(download_dir):
-    """[(Dataset, folder, tiles, bytes)]: every survey in the download folder, in the Dataset menu's order."""
+def downloaded_datasets(download_dir):
+    """[(Dataset, folder, tiles)]: every survey in the download folder, in the Dataset menu's order. Quick (it
+    doesn't measure the folders: download_summary does)."""
     if not os.path.isdir(download_dir):
         return []
     rows = []
@@ -212,9 +213,16 @@ def download_summary(download_dir):
         if not os.path.isdir(os.path.join(download_dir, product)):
             continue
         for dataset, folder in local_datasets(download_dir, product):
-            rows.append((dataset, folder, scan_downloaded_tiles(folder), folder_size(folder)))
+            rows.append((dataset, folder, scan_downloaded_tiles(folder)))
     order = api.sorted_datasets([row[0] for row in rows])
     return sorted(rows, key=lambda row: (order.index(row[0]), row[1]))
+
+
+def download_summary(download_dir):
+    """[(Dataset, folder, tiles, bytes)]: every survey in the download folder with the space it takes, in the
+    Dataset menu's order."""
+    return [(dataset, folder, tiles, folder_size(folder))
+            for dataset, folder, tiles in downloaded_datasets(download_dir)]
 
 
 def free_space(path):

@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: 2025-2026 Simon Stoate
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""What the plugin does to downloaded tiles with GDAL: mosaics (VRTs, optionally cropped to an area) and
-GeoTIFF copies, overviews for quick drawing, converting the Welsh archive's millimetre grids to metres, and
-the survey dates layer made from the metadata that comes with Composite tiles.
+"""What the plugin does with downloaded tiles through GDAL: a VRT joining a tile's files into the 5 km tile,
+mosaics (VRTs, optionally cropped to an area) and GeoTIFF copies, overviews for quick drawing, converting the
+Welsh archive's millimetre grids to metres (when the user agrees), and finding the surveys in a tile's survey
+file.
 
 Uses the GDAL Python bindings directly (not Processing), so it can run in a QgsTask or inside a
 Processing algorithm on any QGIS version. GeoTIFFs are Cloud-Optimised where the COG driver exists
@@ -12,6 +13,7 @@ Processing algorithm on any QGIS version. GeoTIFFs are Cloud-Optimised where the
 import glob
 import hashlib
 import json
+import math
 import os
 import uuid
 
@@ -45,17 +47,40 @@ def _progress(callback):
     return gdal_progress
 
 
-def _build(path, files):
+def _join_options(files, black_is_data=False):
+    """gdal.BuildVRT's no-data options for joining files: where none of them covers, no data. Photos without a
+    no-data value: where they overlap, a photo's black outside its flight lets the photo beneath show through, but 0
+    isn't declared the mosaic's no data, as a dark pixel with a band at 0 is still part of the picture (the layer shows
+    only all-black as see-through); photos whose black is part of the picture (black_is_data: taken at night) are
+    joined as they are. Elevation grids without one: -9999 (not a height of 0). Grids with one: theirs."""
+    src = gdal.Open(files[0])
+    band = src.GetRasterBand(1)
+    nodata, byte = band.GetNoDataValue(), band.DataType == gdal.GDT_Byte
+    band = src = None
+    if nodata is not None:
+        return {}
+    if byte:
+        return {} if black_is_data else {'srcNodata': 0, 'VRTNodata': 'None'}
+    return {'VRTNodata': -9999}
+
+
+def _options_key(options):
+    """Recorded in a VRT's name: how its files were joined (nothing for files with their own no data)."""
+    return ''.join(f'|{name}={value}' for name, value in sorted(options.items()))
+
+
+def _build(path, files, options=None):
     """A VRT over the files in the order given: where they overlap, later files are drawn on top (so list the
     best survey last), at the finest cell size among them (never an average of mixed resolutions)."""
-    return gdal.BuildVRT(path, list(files), resolution='highest')
+    options = _join_options(files) if options is None else options
+    return gdal.BuildVRT(path, list(files), resolution='highest', **options)
 
 
-def mosaic(files):
+def mosaic(files, black_is_data=False):
     """An in-memory VRT over the files, in the order given (best last) (GDAL path string). Call release() when
     done."""
     path = f'/vsimem/lidar_downloader_{uuid.uuid4().hex}.vrt'
-    vrt = _build(path, files)
+    vrt = _build(path, files, _join_options(files, black_is_data))
     if vrt is None:
         raise RuntimeError('could not build a mosaic of the files')
     vrt = None  # flush to /vsimem
@@ -68,10 +93,11 @@ def release(path):
         gdal.Unlink(path)
 
 
-def _nodata_options(source):
-    """gdal.Warp options for a cropped copy's no data: the source's own value; for imagery without one, 0 ("no
-    image": the black outside the flight), declared on the source too so GDAL doesn't shift real black pixels to
-    1; for elevation grids without one, -9999."""
+def _nodata_options(source, black_is_data=False):
+    """gdal.Warp options for a cropped copy's no data: the source's own value; for elevation grids without one,
+    -9999. Photos: outside the area is see-through by an alpha band, so no colour has to mean "nothing"; so are
+    all-black pixels (the area outside a flight: black in every band, not just one), unless black is part of the
+    picture (black_is_data: taken at night)."""
     src = gdal.Open(source)
     band = src.GetRasterBand(1)
     nodata = band.GetNoDataValue()
@@ -80,7 +106,9 @@ def _nodata_options(source):
     if nodata is not None:
         return {'dstNodata': nodata}
     if byte:
-        return {'srcNodata': 0, 'dstNodata': 0}
+        if black_is_data:
+            return {'dstAlpha': True}
+        return {'srcNodata': 0, 'dstAlpha': True, 'warpOptions': ['UNIFIED_SRC_NODATA=YES']}
     return {'dstNodata': -9999}
 
 
@@ -113,7 +141,28 @@ def fit_cutline(cutline_geojson, source):
     return json.dumps(data)
 
 
-def clip(source, output, cutline_geojson, progress=None):
+def overlaps(cutline_geojson, bounds):
+    """True if any of the polygons (a GeoJSON FeatureCollection string) covers part of the box bounds (xmin, ymin,
+    xmax, ymax), e.g. a 5 km tile; only touching its edge doesn't count."""
+    xmin, ymin, xmax, ymax = bounds
+    ring = ogr.Geometry(ogr.wkbLinearRing)
+    for x, y in ((xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax), (xmin, ymin)):
+        ring.AddPoint_2D(x, y)
+    box = ogr.Geometry(ogr.wkbPolygon)
+    box.AddGeometry(ring)
+    for feature in json.loads(cutline_geojson).get('features', []):
+        geometry = ogr.CreateGeometryFromJson(json.dumps(feature['geometry']))
+        if geometry is None:
+            continue
+        if not geometry.IsValid():
+            geometry = geometry.MakeValid() if hasattr(geometry, 'MakeValid') else geometry.Buffer(0)
+        part = geometry.Intersection(box) if geometry is not None else None
+        if part is not None and not part.IsEmpty() and part.GetArea() > 0:
+            return True
+    return False
+
+
+def clip(source, output, cutline_geojson, progress=None, black_is_data=False):
     """Clip a raster to polygons given as a GeoJSON FeatureCollection string (with a 'crs' member).
 
     Pixels outside the polygons become no data. Returns the output path. Raises ValueError if the polygons
@@ -122,7 +171,8 @@ def clip(source, output, cutline_geojson, progress=None):
     cutline = f'/vsimem/lidar_downloader_cut_{uuid.uuid4().hex}.geojson'
     gdal.FileFromMemBuffer(cutline, fit_cutline(cutline_geojson, source).encode('utf-8'))
     try:
-        result = gdal.Warp(output, source, cutlineDSName=cutline, cropToCutline=True, **_nodata_options(source),
+        result = gdal.Warp(output, source, cutlineDSName=cutline, cropToCutline=True,
+                           **_nodata_options(source, black_is_data),
                            multithread=True, callback=_progress(progress), **_output_options())
         if result is None:
             raise RuntimeError('clipping failed')
@@ -132,21 +182,75 @@ def clip(source, output, cutline_geojson, progress=None):
     return output
 
 
-def unique_name(files, prefix, suffix, extra=''):
-    """A file name unique to the files in their order (which one is drawn on top matters) and extra (e.g. an
-    area), e.g. mosaic_2_tiles_1a2b3c4d5e.vrt."""
+def file_key(files, extra=''):
+    """A short key unique to the files in their order (which one is drawn on top matters) and extra (e.g. an
+    area), for file names."""
     joined = '|'.join(os.path.normcase(f) for f in files) + extra
-    key = hashlib.blake2b(joined.encode('utf-8'), digest_size=5).hexdigest()  # a file name, not security
-    return f'{prefix}_{len(files)}_tiles_{key}{suffix}'
+    return hashlib.blake2b(joined.encode('utf-8'), digest_size=5).hexdigest()  # a file name, not security
 
 
-def mosaic_file(files, folder):
+def unique_name(files, prefix, suffix, extra=''):
+    """A file name unique to the files in their order and extra, e.g. mosaic_2_tiles_1a2b3c4d5e.vrt."""
+    return f'{prefix}_{len(files)}_tiles_{file_key(files, extra)}{suffix}'
+
+
+def on_pixel_grid(bounds, path):
+    """bounds (xmin, ymin, xmax, ymax) moved out onto a raster's pixel grid (by less than a pixel), so a VRT with
+    them reads its pixels as they are, not shifted by part of a pixel."""
+    src = gdal.Open(path)
+    x0, dx, _, y0, _, dy = src.GetGeoTransform()
+    src = None
+    dx, dy = abs(dx), abs(dy)
+
+    def down(value, origin, size):
+        return round(origin + math.floor((value - origin) / size + 1e-6) * size, 6)
+
+    def up(value, origin, size):
+        return round(origin + math.ceil((value - origin) / size - 1e-6) * size, 6)
+    xmin, ymin, xmax, ymax = bounds
+    return down(xmin, x0, dx), down(ymin, y0, dy), up(xmax, x0, dx), up(ymax, y0, dy)
+
+
+def _empty_share(path):
+    """The share of a photo that's black (0 in all its colour bands): outside its flight. From a small read of it."""
+    src = gdal.Open(path)
+    bands = [src.GetRasterBand(b).ReadAsArray(buf_xsize=64, buf_ysize=64)
+             for b in range(1, min(src.RasterCount, 3) + 1)]
+    src = None
+    empty = bands[0] == 0
+    for band in bands[1:]:
+        empty &= band == 0
+    return float(empty.mean())
+
+
+def tile_vrt(files, folder, tile, bounds, black_is_data=False):
+    """A VRT joining a tile's files into the 5 km tile, trimmed to its square (bounds: xmin, ymin, xmax, ymax; on the
+    files' own pixel grid, which some surveys have a fraction of a pixel off it), in folder with a name unique to the
+    tile and its files (made once). It only reads the files: nothing is copied or changed. Photos are drawn fullest on
+    top, so where they overlap the edge of one that's mostly black (never quite black after compression) doesn't
+    cover a neighbour. Returns its path."""
+    os.makedirs(folder, exist_ok=True)
+    options = _join_options(files, black_is_data)
+    if options.get('srcNodata') == 0:  # photos: the emptiest underneath
+        files = sorted(files, key=_empty_share, reverse=True)
+    path = os.path.join(folder, f'{tile}_{file_key(files, _options_key(options))}.vrt')
+    if not os.path.exists(path):
+        vrt = gdal.BuildVRT(path, list(files), resolution='highest', outputBounds=on_pixel_grid(bounds, files[0]),
+                            **options)
+        if vrt is None:
+            raise RuntimeError(f'could not join the files of {tile}')
+        vrt = None
+    return path
+
+
+def mosaic_file(files, folder, black_is_data=False):
     """A VRT mosaic of the files in the order given (best last), saved in folder with a name unique to them.
     Returns its path."""
     os.makedirs(folder, exist_ok=True)
-    path = os.path.join(folder, unique_name(files, 'mosaic', '.vrt'))
+    options = _join_options(files, black_is_data)
+    path = os.path.join(folder, unique_name(files, 'mosaic', '.vrt', _options_key(options)))
     if not os.path.exists(path):
-        vrt = _build(path, files)
+        vrt = _build(path, files, options)
         if vrt is None:
             raise RuntimeError('could not build a mosaic of the tiles')
         vrt = None
@@ -155,7 +259,6 @@ def mosaic_file(files, folder):
 
 # Composite LIDAR tiles list their surveys in the first; SurfZone tiles (LIDAR and sea-bed surveys) in the second
 SURVEY_LAYERS = ('lidar_used_in_merging_process', 'survey_used_in_merging_process')
-SURVEY_FIELDS = ('FILENAME', 'SRVY_YEAR', 'SD_FLOWN', 'ED_FLOWN', 'RESOLUTION', 'SRVY_TYPE')
 
 
 def _survey_layer(src):
@@ -170,69 +273,14 @@ def _survey_layer(src):
     return None
 
 
-def survey_dates(metadata_files, output):
-    """Merge the survey polygons (when each area was flown) from tiles' metadata GeoPackages.
-
-    metadata_files is {tile: [GeoPackage paths]}. Writes a GeoPackage layer 'survey_dates' with
-    fields tile, survey, year, flown_from, flown_to, resolution. Returns the number of polygons
-    (0, and no file, if the tiles have no survey metadata).
-    """
-    part = output + '.part.gpkg'
-    for path in (part, output):
-        if os.path.exists(path):
-            os.remove(path)
-    out_ds = ogr.GetDriverByName('GPKG').CreateDataSource(part)
-    # The metadata's dates (e.g. 2018-01-29T00:00:00.0Z) read fine but GDAL warns about their format
-    gdal.PushErrorHandler('CPLQuietErrorHandler')
-    out_layer = None
-    count = 0
-    try:
-        for tile in sorted(metadata_files):
-            for path in metadata_files[tile]:
-                src = ogr.Open(path)
-                layer = _survey_layer(src) if src is not None else None
-                if layer is None:
-                    continue
-                if out_layer is None:
-                    out_layer = out_ds.CreateLayer('survey_dates', srs=layer.GetSpatialRef(),
-                                                   geom_type=ogr.wkbMultiPolygon)
-                    for name, kind in (('tile', ogr.OFTString), ('survey', ogr.OFTString), ('year', ogr.OFTInteger),
-                                       ('flown_from', ogr.OFTDate), ('flown_to', ogr.OFTDate),
-                                       ('resolution', ogr.OFTReal), ('type', ogr.OFTString)):
-                        out_layer.CreateField(ogr.FieldDefn(name, kind))
-                defn = layer.GetLayerDefn()
-                has = {name: defn.GetFieldIndex(name) >= 0 for name in SURVEY_FIELDS}
-                for feature in layer:
-                    geometry = feature.GetGeometryRef()
-                    if geometry is None:
-                        continue
-                    out = ogr.Feature(out_layer.GetLayerDefn())
-                    out.SetField('tile', tile)
-                    if has['FILENAME']:
-                        out.SetField('survey', feature.GetField('FILENAME'))
-                    if has['SRVY_YEAR'] and feature.IsFieldSetAndNotNull('SRVY_YEAR'):
-                        out.SetField('year', feature.GetFieldAsInteger('SRVY_YEAR'))
-                    for src_name, dst_name in (('SD_FLOWN', 'flown_from'), ('ED_FLOWN', 'flown_to')):
-                        if has[src_name] and feature.IsFieldSetAndNotNull(src_name):
-                            out.SetField(dst_name, feature.GetFieldAsString(src_name)[:10].replace('/', '-'))
-                    if has['RESOLUTION'] and feature.IsFieldSetAndNotNull('RESOLUTION'):
-                        out.SetField('resolution', feature.GetFieldAsDouble('RESOLUTION'))
-                    if has['SRVY_TYPE'] and feature.IsFieldSetAndNotNull('SRVY_TYPE'):
-                        out.SetField('type', feature.GetField('SRVY_TYPE'))
-                    out.SetGeometry(ogr.ForceToMultiPolygon(geometry.Clone()))
-                    out_layer.CreateFeature(out)
-                    count += 1
-                layer = None
-                src = None
-    finally:
-        gdal.PopErrorHandler()
-        out_layer = None
-        out_ds = None
-    if count == 0:
-        os.remove(part)
-        return 0
-    os.replace(part, output)
-    return count
+def survey_layer_name(path):
+    """The layer of a tile's survey file (a GeoPackage) that lists its surveys with when they were flown, or
+    None."""
+    src = ogr.Open(path)
+    layer = _survey_layer(src) if src is not None else None
+    name = layer.GetName() if layer is not None else None
+    layer = src = None
+    return name
 
 
 def geojson_feature_collection(geometries_json, epsg):
@@ -272,8 +320,9 @@ def cutline_from_geometries(geometries, crs, raster_path, transform_context=None
 
 
 def default_output(folder, stem, suffix, extension='.tif'):
-    """A not-yet-existing path like <folder>/<stem>_<suffix>.tif (adds _2, _3... if needed)."""
-    base = os.path.join(folder, f'{stem}_{suffix}')
+    """A not-yet-existing path like <folder>/<stem>_<suffix>.tif, or <stem>.tif with no suffix (adds _2, _3... if
+    needed)."""
+    base = os.path.join(folder, f'{stem}_{suffix}' if suffix else stem)
     path, n = f'{base}{extension}', 2
     while os.path.exists(path):
         path, n = f'{base}_{n}{extension}', n + 1
@@ -283,12 +332,18 @@ def default_output(folder, stem, suffix, extension='.tif'):
 MM_UNITS_SUFFIX = '_mm_units'
 
 
+def mm_grids(folder):
+    """Natural Resources Wales' archive grids in a folder still in millimetres, as published (..._mm_units.asc)."""
+    return sorted(glob.glob(os.path.join(glob.escape(folder), '**', f'*{MM_UNITS_SUFFIX}.asc'), recursive=True))
+
+
 def convert_mm_grids(folder):
     """Natural Resources Wales' archive grids store heights in millimetres (files named ..._mm_units.asc):
     rewrite each as a compressed GeoTIFF in metres (British National Grid, no data kept) and remove the
-    millimetre grid. Returns the number converted (0 if there's nothing to do, e.g. already converted)."""
+    millimetre grid. Only when the user agrees: it changes the downloaded files. Returns the number converted (0 if
+    there's nothing to do, e.g. already converted)."""
     converted = 0
-    for path in glob.glob(os.path.join(glob.escape(folder), '**', f'*{MM_UNITS_SUFFIX}.asc'), recursive=True):
+    for path in mm_grids(folder):
         output = path[:-len(f'{MM_UNITS_SUFFIX}.asc')] + '.tif'
         src = gdal.Open(path)
         band = src.GetRasterBand(1)
@@ -348,18 +403,18 @@ def add_overviews(paths):
     return built
 
 
-def build_vrt(files, output):
+def build_vrt(files, output, black_is_data=False):
     """A VRT mosaic of the files (in the order given: best last) at output, replacing any. Returns the output
     path."""
     remove_file(output)
-    vrt = _build(output, files)
+    vrt = _build(output, files, _join_options(files, black_is_data))
     if vrt is None:
         raise RuntimeError('could not build a mosaic of the tiles')
     vrt = None
     return output
 
 
-def crop_vrt(source, output, cutline_geojson):
+def crop_vrt(source, output, cutline_geojson, black_is_data=False):
     """A VRT of a raster cropped to polygons (a GeoJSON FeatureCollection string with a 'crs' member): outside
     them is no data. Nothing is copied: the VRT reads source (which must be a file, e.g. a mosaic VRT) with
     the polygons stored in it. Returns the output path. Raises ValueError if the polygons don't overlap the
@@ -369,7 +424,7 @@ def crop_vrt(source, output, cutline_geojson):
     try:
         remove_file(output)
         result = gdal.Warp(output, source, format='VRT', cutlineDSName=cutline, cropToCutline=True,
-                           **_nodata_options(source))
+                           **_nodata_options(source, black_is_data))
         if result is None:
             raise RuntimeError('cropping failed')
         result = None
@@ -378,12 +433,13 @@ def crop_vrt(source, output, cutline_geojson):
     return output
 
 
-def cropped_mosaic_file(files, folder, cutline_geojson):
+def cropped_mosaic_file(files, folder, cutline_geojson, black_is_data=False):
     """A VRT mosaic of the files cropped to polygons, saved in folder with a name unique to the files and the
     area (reused if it exists). Returns its path."""
-    path = os.path.join(folder, unique_name(files, 'cropped', '.vrt', cutline_geojson))
+    path = os.path.join(folder, unique_name(files, 'cropped', '.vrt',
+                                            cutline_geojson + _options_key(_join_options(files, black_is_data))))
     if not os.path.exists(path):
-        crop_vrt(mosaic_file(files, folder), path, cutline_geojson)
+        crop_vrt(mosaic_file(files, folder, black_is_data), path, cutline_geojson, black_is_data)
     return path
 
 

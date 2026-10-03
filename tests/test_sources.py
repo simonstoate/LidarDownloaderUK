@@ -170,3 +170,12 @@ def test_services_named_when_not_responding():
     assert api.url_source('https://example.com/x') == ''
     message = api.not_responding('wales')
     assert message.startswith("DataMapWales isn't responding") and api.NOT_RESPONDING in message
+
+
+def test_northern_ireland_links_are_elevation_data_on_the_current_site():
+    # LIDAR and the DTMs made from it only (no flood maps or geology), and OpenDataNI's /search?q=...: its old
+    # /dataset?... addresses answer "500 | Internal Server Error" since the site was rebuilt
+    assert len(sources.NI_LINKS) == 2
+    for label, url in sources.NI_LINKS:
+        assert 'LIDAR' in label or 'DTM' in label
+        assert url.startswith('https://www.opendatani.gov.uk/search?q=')

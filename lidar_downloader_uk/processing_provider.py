@@ -74,6 +74,7 @@ class DownloadTilesAlgorithm(QgsProcessingAlgorithm):
     OVERWRITE = 'OVERWRITE'
     ACCEPT_TERMS = 'ACCEPT_TERMS'
     DELETE_ZIPS = 'DELETE_ZIPS'
+    CONVERT_MM = 'CONVERT_MM'
     BUILD_VRT = 'BUILD_VRT'
     OUTPUT_VRT = 'OUTPUT_VRT'
     CROP_VRT = 'CROP_VRT'
@@ -137,6 +138,9 @@ class DownloadTilesAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(QgsProcessingParameterBoolean(
             self.DELETE_ZIPS, self.tr('Delete zip files after extracting'), defaultValue=False))
         self.addParameter(QgsProcessingParameterBoolean(
+            self.CONVERT_MM, self.tr('Convert Welsh archive heights from millimetres to metres (rewrites the '
+                                     'files; NRW published them in millimetres)'), defaultValue=False))
+        self.addParameter(QgsProcessingParameterBoolean(
             self.ACCEPT_TERMS, self.tr('Accept the licence terms of surveys for non-commercial use only '
                                        '(some Scottish surveys)'), defaultValue=False))
         self.addParameter(QgsProcessingParameterBoolean(
@@ -199,9 +203,10 @@ class DownloadTilesAlgorithm(QgsProcessingAlgorithm):
             feedback.reportError(message, fatalError=False)
         feedback.pushInfo(self.tr('{} tile(s) ready, {} failed.').format(len(succeeded), len(failed)))
 
-        for tile in succeeded:  # Welsh archive grids downloaded before the plugin converted them to metres
-            if available[tile].dataset.product.startswith('wales_lidar_archive'):
-                postprocess.convert_mm_grids(folders[tile])
+        if self.parameterAsBoolean(parameters, self.CONVERT_MM, context):  # only if asked: it rewrites the files
+            for tile in succeeded:
+                if available[tile].dataset.product.startswith('wales_lidar_archive'):
+                    postprocess.convert_mm_grids(folders[tile])
         # Worst survey first, best last: in the mosaic the best is drawn on top, the others fill its gaps
         ranked = sorted((api.survey_rank(available[t].dataset), path) for t in succeeded
                         for path in storage.find_raster_files(folders[t], t))
@@ -300,9 +305,10 @@ class DownloadTilesAlgorithm(QgsProcessingAlgorithm):
             feedback.pushWarning(self.tr('No clipped output: the input layer has no polygons.'))
             return None
         feedback.pushInfo(self.tr('Clipping to the input layer...'))
-        mosaic = postprocess.mosaic(files)
+        black = api.black_is_data(dataset.product)
+        mosaic = postprocess.mosaic(files, black)
         try:
-            postprocess.clip(mosaic, clipped_path, cutline, progress=self._progress(feedback))
+            postprocess.clip(mosaic, clipped_path, cutline, progress=self._progress(feedback), black_is_data=black)
         finally:
             postprocess.release(mosaic)
         self._load_on_completion(context, clipped_path, f'{api.dataset_label(dataset)} clipped', self.OUTPUT_CLIPPED)
@@ -378,15 +384,16 @@ class DownloadTilesAlgorithm(QgsProcessingAlgorithm):
             cutline = self._cutline(parameters, context, files[0])
             if cutline is None:
                 feedback.pushWarning(self.tr('The VRT is not cropped: the input layer has no polygons.'))
+        black = api.black_is_data(dataset.product)  # (night photos: black is part of the picture)
         feedback.pushInfo(self.tr('Building VRT from {} file(s)').format(len(files))
                           + (', cropped...' if cutline else '...'))
         try:
             if cutline:
                 # The cropped VRT reads a mosaic VRT of the tiles, kept with the dataset's other mosaics
-                source = postprocess.mosaic_file(files, os.path.join(dataset_dir, 'mosaics'))
-                postprocess.crop_vrt(source, output, cutline)
+                source = postprocess.mosaic_file(files, os.path.join(dataset_dir, 'mosaics'), black)
+                postprocess.crop_vrt(source, output, cutline, black)
             else:
-                postprocess.build_vrt(files, output)
+                postprocess.build_vrt(files, output, black)
         except RuntimeError as e:
             raise QgsProcessingException(self.tr('Could not build the VRT: {}').format(e)) from e
         name = api.dataset_label(dataset) + (' (cropped)' if cutline else '')

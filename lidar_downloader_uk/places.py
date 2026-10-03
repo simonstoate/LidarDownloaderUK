@@ -93,6 +93,55 @@ def parse_grid_reference(text):
     return None
 
 
+def tile_at(easting, northing):
+    """The 5 km tile (e.g. 'SU12NE') a point in British National Grid metres is in, or None if it's off the grid."""
+    if not (0 <= easting < MAX_EASTING and 0 <= northing < MAX_NORTHING):
+        return None
+    e100, n100 = int(easting // 100000), int(northing // 100000)
+    first = (19 - n100) - (19 - n100) % 5 + (e100 + 10) // 5
+    second = (19 - n100) * 5 % 25 + e100 % 5
+    e, n = easting % 100000, northing % 100000
+    return (f'{GRID_LETTERS[first]}{GRID_LETTERS[second]}{int(e // 10000)}{int(n // 10000)}'
+            f'{"N" if n % 10000 >= 5000 else "S"}{"E" if e % 10000 >= 5000 else "W"}')
+
+
+def tile_cell(tile):
+    """(column, row) of a 5 km tile among the grid's 5 km squares (its south-west corner / 5000), or None if it isn't
+    a tile name."""
+    place = parse_grid_reference(tile)
+    if place is None or place.extent is None or place.extent[2] - place.extent[0] != 5000:
+        return None
+    return int(place.extent[0] // 5000), int(place.extent[1] // 5000)
+
+
+def fills_rectangle(tiles):
+    """True if there are two or more tiles and together they fill a square or rectangle of the grid, with no gaps,
+    so a mosaic of them has no empty space."""
+    names = {tile.upper() for tile in tiles}
+    cells = {tile_cell(name) for name in names}
+    if len(names) < 2 or None in cells:
+        return False
+    cols, rows = [col for col, _ in cells], [row for _, row in cells]
+    return len(cells) == (max(cols) - min(cols) + 1) * (max(rows) - min(rows) + 1)
+
+
+def tiles_ref(tiles):
+    """A short name for some tiles, for file and layer names: the tile itself ('SU12NE'); its 10 km square for all
+    four of its tiles ('SU12'); two or three tiles by name ('SU12NE_SU12NW'); more by the tiles at the south-west and
+    north-east corners of the area they cover ('SU12SW-SU22NE')."""
+    names = sorted({tile.upper() for tile in tiles})
+    if len(names) == 1:
+        return names[0]
+    squares = {name[:-2] for name in names}
+    if len(names) == 4 and len(squares) == 1 and all(tile_cell(name) for name in names):
+        return squares.pop()
+    cells = [cell for cell in (tile_cell(name) for name in names) if cell]
+    if len(names) <= 3 or len(cells) < len(names):
+        return '_'.join(names)
+    cols, rows = [col for col, _ in cells], [row for _, row in cells]
+    return f'{tile_at(min(cols) * 5000, min(rows) * 5000)}-{tile_at(max(cols) * 5000, max(rows) * 5000)}'
+
+
 def is_postcode(text):
     return bool(POSTCODE_RE.match((text or '').strip().upper()))
 

@@ -270,11 +270,11 @@ OFFICIAL_SOURCES = (
     ('Scotland: Scottish Remote Sensing Portal', SCOTLAND_PORTAL),
 )
 # Northern Ireland isn't downloadable through the plugin yet: its LIDAR is on OpenDataNI as area
-# downloads in Irish Grid. These are the official places to go (same approach as FloodMaps UK).
+# downloads in Irish Grid. These are the official places to find it: elevation data only (LIDAR and
+# the DTMs made from it). OpenDataNI's site search is /search?q=...: its old /dataset?... addresses
+# answer "500 | Internal Server Error" since the site was rebuilt (checked October 2026).
 NI_LINKS = (
     ('LIDAR datasets on OpenDataNI (river basins, Lough Neagh, coast, Belfast)',
-     'https://www.opendatani.gov.uk/dataset?tags=LIDAR'),
-    ('OSNI 10 m and 50 m DTMs (OpenDataNI)', 'https://www.opendatani.gov.uk/dataset?q=OSNI+DTM'),
-    ('Flood Maps NI (DfI Rivers)', 'https://www.infrastructure-ni.gov.uk/topics/flood-maps-ni'),
-    ('Geology: GSNI GeoIndex', 'https://mapapps2.bgs.ac.uk/GSNI_Geoindex/home.html'),
+     'https://www.opendatani.gov.uk/search?q=lidar'),
+    ('OSNI 10 m and 50 m DTMs (OpenDataNI)', 'https://www.opendatani.gov.uk/search?q=OSNI+DTM'),
 )

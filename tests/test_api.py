@@ -320,3 +320,11 @@ class WhereTest(unittest.TestCase):
         self.assertEqual(api.squares_text(['SU12NE', 'SU12NW', 'SU22NW']), 'SU12, SU22')
         self.assertEqual(api.squares_text(['SU12NE', 'SU22NW', 'SU32NW', 'SU42NW', 'TQ09SW', 'ST16NE']),
                          'ST16, SU12, SU22, SU32 +2 more')
+
+
+class MosaicNameTest(unittest.TestCase):
+    def test_names(self):
+        self.assertEqual(api.mosaic_name(api.DEFAULT_DATASET, 'SU12NE_SU12NW'),
+                         'England_Composite_DTM_2022_1m_SU12NE_SU12NW')
+        self.assertEqual(api.mosaic_name(api.Dataset('wales_lidar_dtm', '2020-2022', '1'), 'SH28', cropped=True),
+                         'Wales_DTM_national_survey_2020-22_1m_SH28_cropped')

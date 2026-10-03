@@ -437,23 +437,60 @@ def main():
         check(not icon_image.isNull() and icon_image.pixelColor(12, 12).alpha() > 0,
               "toolbar icon (SVG) renders at 24 px")
         check(not dock.btnCancel.isEnabled(), "cancel disabled when idle")
-        check(dock.chkLoadAfterDownload.isChecked(), "'Load tiles after downloading' is on for a new user")
-        dock.chkLoadAfterDownload.setChecked(False)  # the checks below load tiles themselves
+        after = dock.cboAfterDownload
+
+        def mosaic_offered():
+            row = after.findData('mosaic')
+            return after.model().item(row).isEnabled() and not after.view().isRowHidden(row)
+
+        def choose_after(key):
+            after.setCurrentIndex(after.findData(key))
+        check(after.currentData() == 'tiles' and not mosaic_offered(),
+              "a new user's downloads load each tile individually (a temporary mosaic needs a rectangle of tiles)")
+        choose_after('none')  # the checks below load tiles themselves
+        check(dock.lblStatus.isHidden() and not dock.grpTiles.isCollapsed() and dock.grpFolder.isCollapsed()
+              and dock.grpLegend.isCollapsed() and type(dock.grpFolder).__name__ == 'QgsCollapsibleGroupBox',
+              "room saved: no empty status line; the sections fold up, with Download folder and Legend folded to start")
+        check(dock.chkCoverage.isChecked(), "shading the tiles available to download is on for a new user")
+        dock.chkCoverage.setChecked(False)  # (the coverage checks below tick it themselves)
+        check(not dock.btnDataset.isEnabled() and dock.btnDataset.fullText() == mod.SELECT_TILES_PROMPT
+              and not dock.btnDatasetInfo.isEnabled() and dock.lblAvailability.isHidden(),
+              "before a tile is selected, step 2 asks for one instead of listing datasets")
+        check(not dock.btnDownloadTiles.isEnabled() and dock.btnDownloadTiles.text() == 'Download selected tiles',
+              "... and the Download button is greyed out")
+        check(not dock.btnLoadSelected.isEnabled() and not dock.btnCreateVRT.isEnabled()
+              and not dock.btnSurveyDates.isEnabled() and dock.btnSurveyDates.isCheckable(),
+              "... and so are step 4's buttons (Survey dates is an on / off button)")
+        check(dock.btnShaded.fullText() == 'England Composite DTM, 2022, 1 m'
+              and dock.btnShaded.toolTip().startswith('England Composite DTM, 2022, 1 m (none downloaded yet)'),
+              "'Shaded for' names the dataset the grid's shading is about")
 
         dock.leDownloadDir.setText(tmp)
         dock.leDownloadDir.editingFinished.emit()
         check(QSettings().value(mod.SETTINGS_KEY_DIR) == tmp, "download folder saved when edited")
         dock.show()
 
-        # --- selection helpers (they load the grid on demand)
+        # --- picking tiles on the map (it loads the grid on demand)
         canvas.setDestinationCrs(QgsCoordinateReferenceSystem('EPSG:27700'))
         canvas.setExtent(QgsRectangle(417300, 127300, 417700, 127700))  # small view in the middle of SU12NE
-        plugin.select_tiles_in_view()
+        check(dock.btnPickTiles.isCheckable() and not dock.btnPickTiles.icon().isNull()
+              and not dock.btnDeselect.icon().isNull(), "picking and deselecting tiles are icons (QGIS's own)")
+        dock.btnPickTiles.click()
         layer = plugin.grid.layer()
-        check(layer is not None and layer.featureCount() == 36400 and dock.chkShowGrid.isChecked(),
-              "'Tiles in map view' loads the grid (the whole OS 5 km grid, sea included)")
-        check(plugin.grid.selected_tile_names() == ['SU12NE'], "'Tiles in map view' selects the tile under the view")
-        check("1 to download, about 70 MB" in dock.lblTileCount.text(), "selection label shows size estimate")
+        check(layer is not None and layer.featureCount() == 36400 and dock.chkShowGrid.isChecked()
+              and canvas.mapTool() is plugin.pick_tool,
+              "the pick icon loads the grid (the whole OS 5 km grid, sea included) and starts picking")
+        plugin.on_tiles_picked(QgsGeometry.fromPointXY(QgsPointXY(417500, 127500)), True, 'replace')
+        check(plugin.grid.selected_tile_names() == ['SU12NE'], "a tile picked on the map is selected")
+        check(dock.lblTileCount.text() == "1 tile selected",
+              "the selection summary is one line (the Download button gives what it will fetch, and the size)")
+        check(dock.btnDownloadTiles.isEnabled() and dock.btnDownloadTiles.text() == 'Download 1 tile (~70 MB)',
+              "the Download button says what it will do")
+        check(not dock.btnLoadSelected.isEnabled() and not dock.btnCreateVRT.isEnabled(),
+              "step 4's buttons stay greyed out while none of the selected tiles is downloaded")
+        check(dock.btnDataset.isEnabled() and dock.btnDatasetInfo.isEnabled()
+              and dock.btnDataset.fullText().startswith('England Composite DTM, 2022, 1 m'),
+              "with a tile selected, step 2 shows the chosen dataset")
         rules = style_rules(layer)
         check('Available' in rules and rules['Available'][1], "'Available' is the ELSE rule")
         outside = rules.get('No data', ('', False, None))[0]
@@ -466,27 +503,52 @@ def main():
         plugin.grid.load()
         check(len(QgsProject.instance().mapLayersByName("OSGB Grid")) == 1, "reloading grid doesn't duplicate")
 
-        canvas.setExtent(QgsRectangle(600000, 1000000, 605000, 1005000))  # the North Sea
         msgs.clear()
-        plugin.select_tiles_in_view()
+        plugin.on_tiles_picked(QgsGeometry.fromRect(QgsRectangle(600000, 1000000, 605000, 1005000)), False, 'replace')
         check(plugin.grid.selected_tile_names() == [] and msgs and msgs[-1][1] == Qgis.MessageLevel.Warning,
-              "no tiles with data in view -> warning")
+              "a box with no tiles with data under it (the North Sea) -> warning")
+        dock.btnPickTiles.click()
+        check(canvas.mapTool() is not plugin.pick_tool and not dock.btnPickTiles.isChecked(),
+              "clicking the pick icon again puts the tool away")
 
-        # A WGS84 point layer exercises the CRS transform: one point in SU12NE, one in SU12NW
-        points = QgsVectorLayer('Point?crs=EPSG:4326', 'sites', 'memory')
+        # 'Crop to' a polygon layer: ticking it selects the tiles beneath (in WGS84: exercises the CRS transform)
+        site_layer = QgsVectorLayer('Polygon?crs=EPSG:4326', 'site polygons', 'memory')
         feats = []
+        for x, y in ((-1.745, 51.05), (-1.80, 51.05)):  # one site in SU12NE, one in SU12NW
+            f = QgsFeature()
+            f.setGeometry(QgsGeometry.fromRect(QgsRectangle(x - 0.002, y - 0.002, x + 0.002, y + 0.002)))
+            feats.append(f)
+        site_layer.dataProvider().addFeatures(feats)
+        points = QgsVectorLayer('Point?crs=EPSG:4326', 'site points', 'memory')  # (the Processing checks use it)
+        point_features = []
         for x, y in ((-1.745, 51.05), (-1.80, 51.05)):
             f = QgsFeature()
             f.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(x, y)))
-            feats.append(f)
-        points.dataProvider().addFeatures(feats)
-        QgsProject.instance().addMapLayer(points)
-        dock.cboLayer.setLayer(points)
-        plugin.select_tiles_under_layer()
-        check(sorted(plugin.grid.selected_tile_names()) == ['SU12NE', 'SU12NW'],
-              "'Tiles under layer' selects intersecting tiles (with CRS transform)")
+            point_features.append(f)
+        points.dataProvider().addFeatures(point_features)
+        no_polygons = QgsVectorLayer('Polygon?crs=EPSG:27700', 'sites', 'memory')  # a polygon layer, empty
+        QgsProject.instance().addMapLayers([site_layer, points, no_polygons])
         picker_ids = [dock.cboLayer.layer(i).id() for i in range(dock.cboLayer.count())]
-        check(layer.id() not in picker_ids and points.id() in picker_ids, "grid layer excluded from the layer picker")
+        check(layer.id() not in picker_ids and site_layer.id() in picker_ids and points.id() not in picker_ids,
+              "'Crop to' lists polygon layers only (and never the grid)")
+        dock.cboLayer.setLayer(site_layer)
+        check(plugin.grid.selected_tile_names() == [], "(choosing the layer alone selects nothing)")
+        dock.chkCrop.setChecked(True)
+        check(sorted(plugin.grid.selected_tile_names()) == ['SU12NE', 'SU12NW'],
+              "ticking 'Crop to' selects the tiles beneath its layer (with CRS transform)")
+        check(not dock.btnPickTiles.isEnabled() and not dock.btnDeselect.isEnabled()
+              and 'follow the crop' in dock.lblPickHint.text(),
+              "while 'Crop to' is ticked the tiles follow the crop: they aren't picked or deselected by hand")
+        site_layer.selectByIds([1])  # the site in SU12NE
+        app.processEvents()
+        check(plugin.grid.selected_tile_names() == ['SU12NE'],
+              "selecting one of the layer's polygons: only the tile that crop needs is selected")
+        site_layer.removeSelection()
+        app.processEvents()
+        check(sorted(plugin.grid.selected_tile_names()) == ['SU12NE', 'SU12NW'], "... and with none selected, both")
+        dock.chkCrop.setChecked(False)
+        check(sorted(plugin.grid.selected_tile_names()) == ['SU12NE', 'SU12NW'], "... unticking keeps the selection")
+        check(dock.btnPickTiles.isEnabled() and dock.btnDeselect.isEnabled(), "... and tiles can be picked by hand")
 
         def select(*tiles):
             names = ",".join(f"'{t}'" for t in tiles)
@@ -500,12 +562,11 @@ def main():
         }
         select('SU12NE', 'SU12NW', 'SU12SW', 'NT27NE')
         wait_for_search(plugin)
-        check("1 with no data for this dataset" in dock.lblTileCount.text(),
-              "the live check finds the square without the dataset")
+        check("1 without this data" in dock.lblTileCount.text(), "the live check finds the square without the dataset")
         msgs.clear()
         plugin.download_selected_tiles()
-        check(plugin.task is not None and dock.btnCancel.isEnabled()
-              and not dock.btnDownloadTiles.isEnabled(), "download runs as background task; UI busy")
+        check(plugin.task is not None and dock.btnCancel.isEnabled() and not dock.btnDownloadTiles.isEnabled()
+              and not dock.btnLoadSelected.isEnabled(), "download runs as background task; UI busy")
         check(wait_for_task(plugin), "task finishes")
         check(any("Skipping 1 tile(s) with no" in m[0] and "NT27NE" in (m[2] or '') for m in msgs),
               "a tile without the dataset is skipped and reported")
@@ -516,10 +577,32 @@ def main():
         check(server.requests.count('SU1025') == 2, "503 is retried")
         check(server.requests.count('SU1020') == 1, "500 (no data) is not retried")
         check(dock.progressBar.value() == 100 and dock.btnDownloadTiles.isEnabled(), "progress 100% and UI re-enabled")
+        check(dock.btnLoadSelected.isEnabled() and dock.btnCreateVRT.isEnabled() and dock.btnSurveyDates.isEnabled(),
+              "with downloaded tiles selected, step 4's buttons can be used")
+        check(dock.btnShaded.toolTip().startswith('England Composite DTM, 2022, 1 m (2 tiles)'),
+              "'Shaded for' counts the tiles downloaded (in its tooltip)")
         check(sorted(os.listdir(DTM)) == ['SU12NE', 'SU12NE.zip', 'SU12NW', 'SU12NW.zip'],
               "tiles saved under product/resolution/year (lidar_composite_dtm/1m/2022), no .part files left")
         labels = list(style_rules(layer))
         check('Downloaded' in labels, "grid restyled with downloaded tiles")
+
+        # --- QGIS's task manager now and then loses a parallel download once its parts are done (it never runs it,
+        # and the panel stayed busy): the download then finishes itself, once, with its parts' results
+        saved_wait, tasks.LOST_DOWNLOAD_MS = tasks.LOST_DOWNLOAD_MS, 100
+        outcome = []
+        lost = tasks.ParallelDownloadTask(['SU12NE', 'SU22NW'], os.path.join(tmp, 'lost'),
+                                          on_finished=lambda task, ok: outcome.append((ok, task.results)))
+        for part in lost.parts:  # what QGIS does as each part completes; the download itself never runs
+            part.results = {tile: None for tile in part.tiles}
+            part.finished(True)
+        end = time.monotonic() + 1
+        while time.monotonic() < end:
+            app.processEvents()
+            time.sleep(0.02)
+        check(outcome == [(True, {'SU12NE': None, 'SU22NW': None})],
+              "a parallel download QGIS loses after its parts finishes itself, once, with their results")
+        tasks.LOST_DOWNLOAD_MS = saved_wait
+        lost = part = None
 
         # --- a service that doesn't answer: said once, plainly; its other tiles aren't each left to time out
         server.responses = {tile_id: [(None, b'')] for tile_id in ('SU2025', 'SU3025', 'SU1520', 'SU1020', 'TQ0090')}
@@ -560,15 +643,20 @@ def main():
         # --- already downloaded: "Skip existing" reuses the files without requesting them
         server.requests.clear()
         select('SU12NE')
-        check("1 already downloaded" in dock.lblTileCount.text(), "label counts already-downloaded tiles")
+        check("1 downloaded" in dock.lblTileCount.text(), "label counts already-downloaded tiles")
         answers.append(0)
         plugin.download_selected_tiles()
         wait_for_task(plugin)
         check(server.requests == [], "existing tiles reused with 'Skip existing'")
 
         # --- "Delete zip files after extracting"
-        dock.chkDeleteZips.setChecked(True)
-        check(QSettings().value(mod.SETTINGS_KEY_DELETE_ZIPS, False, type=bool), "delete-zips option saved")
+        check(not hasattr(dock, 'chkDeleteZips') and not hasattr(dock, 'btnTidyZips'),
+              "the zip tools aren't in the panel...")
+        plugin.show_downloads()
+        plugin.downloads_dialog.chkDeleteZips.setChecked(True)
+        check(QSettings().value(mod.SETTINGS_KEY_DELETE_ZIPS, False, type=bool)
+              and plugin.downloads_dialog.btnTidyZips.isEnabled(), "... but in My downloads; the option is saved")
+        plugin.downloads_dialog.close()
         server.responses = {'SU2025': [(200, tile_zip_bytes('SU22NW'))]}  # SU22NW
         server.requests.clear()
         select('SU22NW')
@@ -579,7 +667,7 @@ def main():
               and os.path.exists(os.path.join(DTM, 'SU22NW', 'SU22nw_DTM_1m.asc'))
               and "Downloaded 1 tile(s)" in msgs[-1][0], "zip deleted after successful extraction")
         select('SU22NW', 'SU12NE')
-        check("2 already downloaded" in dock.lblTileCount.text(), "tile without zip still counts as downloaded")
+        check("2 downloaded" in dock.lblTileCount.text(), "tile without zip still counts as downloaded")
         server.requests.clear()
         answers.append(0)  # Skip existing
         msgs.clear()
@@ -589,7 +677,7 @@ def main():
               "re-using a tile whose zip was deleted works without downloading")
         check(not os.path.exists(os.path.join(DTM, 'SU12NE.zip'))
               and storage.find_raster_files(DTM, 'SU12NE'), "re-using a tile tidies away its old zip")
-        dock.chkDeleteZips.setChecked(False)
+        plugin.downloads_dialog.chkDeleteZips.setChecked(False)
 
         # --- "Delete extracted zips...": SU12NW.zip is fully extracted; SU32NW.zip was never extracted
         with open(os.path.join(DTM, 'SU32NW.zip'), 'wb') as f:
@@ -633,28 +721,63 @@ def main():
                   "Open with a missing folder warns instead")
             dock.leDownloadDir.setText(tmp)
 
-        # --- load (one mosaic per dataset group) + Create mosaic
+        # --- load: a layer per 5 km tile, named after it: here each tile's own file as it is + Create mosaic
         select('SU12NE', 'SU12NW', 'TQ09SW')
         msgs.clear()
+        mosaics_before = set(os.listdir(os.path.join(DTM, 'mosaics'))) if os.path.isdir(os.path.join(DTM, 'mosaics')) \
+            else set()
         plugin.load_selected_tiles()
-        check(msgs and "Loaded 1 layer" in msgs[-1][0] and "TQ09SW" in (msgs[-1][2] or ''),
-              "load selected tiles (TQ09SW not downloaded yet)")
-        mosaics = [lyr for lyr in QgsProject.instance().mapLayers().values()
-                   if lyr.customProperty(mod.MOSAIC_PROPERTY) == 'England Composite DTM, 2022, 1 m']
-        check(len(mosaics) == 1 and mosaics[0].name() == 'England Composite DTM, 2022, 1 m (2 tiles)'
-              and 'mosaic_2_tiles' in mosaics[0].source()
-              and os.sep + 'mosaics' + os.sep in mosaics[0].source(),
-              "the group's tiles load as one mosaic (a VRT in the dataset's 'mosaics' folder)")
-        shader = mosaics[0].renderer().shader() if mosaics and mosaics[0].renderer().type() == 'singlebandpseudocolor' \
-            else None
-        check(shader is not None and shader.minimumValue() < 101 and shader.maximumValue() > 247,
-              "elevation colours stretched over the whole group (both tiles' min and max)")
-        mosaics = shader = None
+        check(msgs and "Loaded 2 layers." in msgs[-1][0] and "TQ09SW" in (msgs[-1][2] or ''),
+              "load selected tiles: a layer for each tile (TQ09SW not downloaded yet)")
+        check(plugin.grid.selected_tile_names() == [], "once tiles are loaded, the grid is deselected")
+        dtm_group = QgsProject.instance().layerTreeRoot().findGroup('England Composite DTM, 2022, 1 m')
+        tile_layers = [n.layer() for n in dtm_group.findLayers()] if dtm_group else []
+        check([lyr.name() for lyr in tile_layers] == ['SU12NE', 'SU12NW']
+              and [os.path.normcase(lyr.source()) for lyr in tile_layers]
+              == [os.path.normcase(storage.find_raster_files(DTM, t)[0]) for t in ('SU12NE', 'SU12NW')],
+              "each tile loads as its own layer, named after the tile, reading its downloaded file itself")
+        mosaics_after = set(os.listdir(os.path.join(DTM, 'mosaics'))) if os.path.isdir(os.path.join(DTM, 'mosaics')) \
+            else set()
+        check(mosaics_after == mosaics_before, "... with nothing made from the files (no mosaic, no copy)")
+        scales = {(lyr.renderer().classificationMin(), lyr.renderer().classificationMax()) for lyr in tile_layers
+                  if lyr.renderer().type() == 'singlebandpseudocolor'}
+        check(len(scales) == 1 and min(scales)[0] < 101 and min(scales)[1] > 247,
+              "the tiles are drawn on one colour scale (both tiles' lowest to highest), so they match at the edge")
+        tile_layers[1].renderer().setClassificationMax(400)  # the user restyles one tile
+        select('SU12NE', 'SU12NW', 'SU12SW')
+        plugin.load_selected_tiles()
+        check(tile_layers[1].renderer().classificationMax() == 400,
+              "... and a tile the user has restyled is left as it is when more are loaded")
+        dtm_group = tile_layers = None
+        select('SU12NE', 'SU12NW', 'SU12SW')
         vrt = os.path.join(tmp, "out.vrt")
-        with mock.patch.object(mod.QFileDialog, "getSaveFileName", return_value=(vrt, "")):
+        answers.append(1)  # Save as...
+        asked.clear()
+        with mock.patch.object(mod.QFileDialog, "getSaveFileName", return_value=(vrt, "")) as save_dialog:
             msgs.clear()
             plugin.create_mosaic_from_selected()
-        check(os.path.exists(vrt) and msgs and "Created out.vrt" in msgs[-1][0], "Create mosaic: a VRT of the tiles")
+        suggested = save_dialog.call_args[0][2] if save_dialog.call_args else ''
+        check(asked and asked[-1][0][1] == 'Create Mosaic' and asked[-1][0][4] == ['Temporary mosaic', 'Save as...'],
+              "Create mosaic asks: a temporary mosaic, or Save as...")
+        check(os.path.normcase(suggested)
+              == os.path.normcase(os.path.join(DTM, 'England_Composite_DTM_2022_1m_SU12NE_SU12NW.vrt')),
+              f"Save as... suggests a name made of the dataset and the tiles in it ({os.path.basename(suggested)})")
+        check(os.path.exists(vrt) and msgs and "Created out.vrt" in msgs[-1][0]
+              and plugin.grid.selected_tile_names() == [], "Create mosaic: a VRT of the tiles, loaded; deselected")
+        select('SU12NE', 'SU12NW')
+        answers.append(0)  # Temporary mosaic
+        msgs.clear()
+        with mock.patch.object(mod.QFileDialog, "getSaveFileName") as save_dialog:
+            plugin.create_mosaic_from_selected()
+        temporary = QgsProject.instance().mapLayersByName('SU12NE_SU12NW')
+        temp_folder = os.path.normcase(os.path.normpath(mod.QgsProcessingUtils.tempFolder()))
+        check(not save_dialog.called and len(temporary) == 1 and temporary[0].isValid()
+              and os.path.normcase(os.path.normpath(temporary[0].source())).startswith(temp_folder)
+              and os.path.basename(temporary[0].source()) == 'England_Composite_DTM_2022_1m_SU12NE_SU12NW.vrt'
+              and msgs and "goes when QGIS closes" in msgs[-1][0] and plugin.grid.selected_tile_names() == [],
+              "... or a temporary mosaic: a VRT in QGIS's temporary folder, loaded straight away; tiles deselected")
+        QgsProject.instance().removeMapLayers([lyr.id() for lyr in temporary])
+        temporary = None
 
         # --- v0.5: choosing a dataset
         def menu_entries(menu=None, path=()):
@@ -672,6 +795,11 @@ def main():
             return next(((p, a) for p, a in menu_entries() if a.data() == '|'.join(dataset)), (None, None))
 
         def choose(dataset):
+            """Choose a dataset: from step 2's menu when tiles are selected (False if it isn't listed for them).
+            With none selected that menu is empty, so it's set directly, as the "Shaded for" menu does."""
+            if not plugin.grid.selected_tile_names():
+                plugin.set_dataset(mod.api.Dataset(*dataset))
+                return True
             _, action = entry_for(dataset)
             if action is not None:
                 action.trigger()
@@ -688,7 +816,8 @@ def main():
         check(all(a.menu() or a.data() for a in dock.btnDataset.menu().actions() if not a.isSeparator()),
               "only products at the top level of the menu (a product with one choice is that choice)")
         check(not any('casi' in ' '.join(p).lower() for p, _ in menu_entries()), "unsupported products not listed")
-        check("LIDAR dataset(s)" in dock.lblAvailability.text(), "availability label")
+        check(dock.lblAvailability.text().endswith("LIDAR datasets") or " + " in dock.lblAvailability.text(),
+              f"availability in a line ({dock.lblAvailability.text()!r})")
         searches = server.searches
         select('SU12NW', 'SU12NE')
         wait_for_search(plugin)
@@ -696,8 +825,8 @@ def main():
 
         check(choose(NLP_DTM) >= 0 and plugin.dataset == mod.api.Dataset(*NLP_DTM), "choosing a dataset")
         check(QSettings().value(mod.SETTINGS_KEY_DATASET) == '|'.join(NLP_DTM), "dataset choice saved")
-        check("1 with no data for this dataset" in dock.lblTileCount.text()
-              and "1 to download, about 69 MB" in dock.lblTileCount.text(), "label reflects the chosen dataset")
+        check("1 without this data" in dock.lblTileCount.text()
+              and dock.btnDownloadTiles.text() == "Download 1 tile (~69 MB)", "label reflects the chosen dataset")
         nlp_dir = os.path.join(tmp, 'national_lidar_programme_dtm', '1m', '2019')
         server.responses = {'SU1525': [(200, tile_zip_bytes('SU12NE'))]}
         server.urls.clear()
@@ -736,7 +865,8 @@ def main():
               "legend is in its own section at the bottom of the panel")
         server.responses = {'SU1525': [(200, tile_zip_bytes('SU12NE'))], 'SU1025': [(200, tile_zip_bytes('SU12NW'))]}
         server.urls.clear()
-        check("1 already downloaded" in dock.lblTileCount.text() and "1 to download" in dock.lblTileCount.text(),
+        check("1 downloaded" in dock.lblTileCount.text()
+              and dock.btnDownloadTiles.text().startswith("Download 1 tile (~"),
               "label: SU12NE's newest survey (2019) already downloaded, SU12NW's (2020) not")
         answers.append(0)  # Skip existing
         plugin.download_selected_tiles()
@@ -755,15 +885,15 @@ def main():
               and 'No data (faint outline)' in legend,
               "legend lists each survey with its tile count")
 
-        # Point clouds: nothing to mosaic before downloading; .laz found after download
+        # Point clouds: downloaded and loaded as they are, never joined into a mosaic or cropped; .laz found after
+        # download
         select('SU12NE')  # a completed download clears the selection
         wait_for_search(plugin)
         choose(NLP_CLOUD)
         msgs.clear()
         plugin.create_mosaic_from_selected()
-        check(msgs and msgs[-1][1] == Qgis.MessageLevel.Warning
-              and ("downloaded yet" in msgs[-1][0] or "3.32" in msgs[-1][0]),
-              "Create mosaic on point clouds not downloaded yet: says why")
+        check(msgs and msgs[-1][1] == Qgis.MessageLevel.Warning and "Point clouds aren't joined" in msgs[-1][0],
+              "Create mosaic on point clouds: says they aren't joined into a mosaic or cropped")
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, 'w') as zf:
             zf.writestr('SU12ne.laz', b'not really a laz file')
@@ -775,6 +905,8 @@ def main():
         check(storage.find_point_cloud_files(cloud_dir, 'SU12NE')
               and 'SU12NE' in storage.scan_downloaded_tiles(cloud_dir),
               "point cloud tile downloaded and recognised")
+        check(dock.btnLoadSelected.isEnabled() and not dock.btnCreateVRT.isEnabled(),
+              "a downloaded point cloud tile can be loaded, but Create mosaic is greyed out for it")
         msgs.clear()
         plugin.load_selected_tiles()
         check(msgs and msgs[-1][1] == Qgis.MessageLevel.Warning and "couldn't be opened" in msgs[-1][0],
@@ -808,9 +940,17 @@ def main():
         check(group is not None and len(group.findLayers()) == 1 and "Loaded 1 layer" in msgs[-1][0],
               "imagery loads as a raster")
         imagery = group.findLayers()[0].layer() if group else None
-        check(imagery is not None
-              and any(r.min() == 0 and r.max() == 0 for r in imagery.dataProvider().userNoDataValues(1)),
-              "imagery black borders set to transparent (no data = 0)")
+        check(imagery is not None and imagery.name() == 'SU12NE' and imagery.source().endswith('.vrt')
+              and os.path.dirname(imagery.source()) == os.path.join(tmp, 'vertical_aerial_photography_tiles_rgbn',
+                                                                    '0.2m', '2014', 'mosaics')
+              and imagery.extent().contains(QgsRectangle(415000, 125000, 420000, 130000))
+              and imagery.extent().width() <= 5000 + 2 * imagery.rasterUnitsPerPixelX(),
+              "imagery: a VRT reading the tile's photos, trimmed to its 5 km square (on the photos' own pixel grid)")
+        black_pixels = imagery.renderer().rasterTransparency().transparentSingleValuePixelList() if imagery else []
+        check(imagery is not None and not imagery.dataProvider().userNoDataValues(1)
+              and any(p.min == 0 and p.max == 0 for p in black_pixels),
+              "imagery: black is drawn see-through by the layer's transparency (no value declared as no data)")
+        black_pixels = None
 
         # --- Oblique photos: GPS-tagged JPEGs become direction arrows with photo map tips
         from osgeo import gdal
@@ -825,6 +965,7 @@ def main():
         with zipfile.ZipFile(photo_zip, 'w') as zf:
             zf.write(jpg_path, 'Obliques_test.jpg')
         os.remove(jpg_path)
+        select('SU12NE')
         choose(OBLIQUE)
         server.responses = {'SU1525': [(200, photo_zip.getvalue())]}
         plugin.download_selected_tiles()
@@ -841,13 +982,15 @@ def main():
         check(photos and abs(next(photos[0].getFeatures()).geometry().asPoint().y() - 51.05) < 0.001,
               "photo placed from its GPS tag")
 
-        # With nothing selected, the Composite datasets are still offered
+        # With nothing selected, step 2 lists nothing: it asks for a tile to be selected ("Shaded for" names the
+        # dataset meanwhile)
         layer.removeSelection()
-        items = [a.data() for _, a in menu_entries()]
-        check('|'.join(DEFAULT) in items and 'lidar_composite_first_return_dsm|2022|2' in items,
-              "Composite datasets always listed, even with no selection")
-        check(dock.btnDataset.fullText().startswith(mod.api.dataset_label(plugin.dataset)),
-              "dataset button shows the chosen dataset")
+        check(not menu_entries() and not dock.btnDataset.isEnabled()
+              and dock.btnDataset.fullText() == mod.SELECT_TILES_PROMPT and not dock.btnDatasetInfo.isEnabled(),
+              "the selection cleared: step 2 goes back to asking for a tile, with nothing listed")
+        check(dock.btnShaded.fullText() == mod.api.dataset_label(plugin.dataset)
+              and not dock.btnDownloadTiles.isEnabled(),
+              "... 'Shaded for' still names the chosen dataset, and Download is greyed out")
 
         # Search failure: say so, and downloads still fall back to the built URL
         choose(DEFAULT)
@@ -908,14 +1051,20 @@ def main():
         select('SU12NE')
         plugin.load_selected_tiles()
         before = len(QgsProject.instance().mapLayers())
+        select('SU12NE')
         msgs.clear()
         plugin.load_selected_tiles()
         check(len(QgsProject.instance().mapLayers()) == before and msgs and "Loaded 0 layer" in msgs[-1][0]
-              and "1 already in the project" in msgs[-1][0], "loading again doesn't add duplicate layers")
+              and "1 already in the project" in msgs[-1][0] and plugin.grid.selected_tile_names() == [],
+              "loading again doesn't add duplicate layers (and deselects the tile: it's in the project)")
+        select('SU12NE')
         vrt_again = os.path.join(tmp, 'dup.vrt')
         with mock.patch.object(mod.QFileDialog, "getSaveFileName", return_value=(vrt_again, "")):
+            answers.append(1)  # Save as...
             plugin.create_mosaic_from_selected()
             before = len(QgsProject.instance().mapLayers())
+            select('SU12NE')
+            answers.append(1)  # Save as...
             msgs.clear()
             plugin.create_mosaic_from_selected()
         check(len(QgsProject.instance().mapLayers()) == before and "already loaded" in msgs[-1][0],
@@ -945,9 +1094,19 @@ def main():
         check(group_node is not None, "(default dataset group exists)")
         groups = (dock.grpTiles, dock.grpDataset, dock.grpDownload, dock.grpUse, dock.grpFolder, dock.grpLegend)
         sections = [dock.layMain.indexOf(g) for g in groups]
-        check(sections == sorted(sections) and dock.layDownload.indexOf(dock.chkLoadAfterDownload) == 1
-              and dock.layDataset.indexOf(dock.btnDataset) == 0,
+        check(sections == sorted(sections) and dock.layDownload.itemAt(1).layout() is dock.layAfterDownload
+              and dock.layAfterDownload.indexOf(dock.cboAfterDownload) == 1
+              and dock.layDataset.itemAt(0).layout() is dock.layDatasetRow
+              and dock.layDatasetRow.indexOf(dock.btnDatasetInfo) == 1,
               "panel in task order: area, data, download (with 'load them' under the button), use, folder, legend")
+        check(dock.layTiles.indexOf(dock.chkShowGrid) == 0 and dock.layDataset.indexOf(dock.chkCoverage) > 0
+              and dock.layTiles.indexOf(dock.chkCoverage) == -1,
+              "the grid's tick box is at the top of step 1; shading the tiles available to download is in step 2")
+        check(dock.grpFolder.isAncestorOf(dock.btnShaded) and not dock.grpTiles.isAncestorOf(dock.btnShaded)
+              and dock.chkShowGrid.text() == 'Show OSGB 5 km grid',
+              "the list of what's downloaded is in the Download folder section")
+        check(dock.grpFolder.isAncestorOf(dock.btnMyDownloads) and not dock.grpUse.isAncestorOf(dock.btnMyDownloads),
+              "... and so is My downloads")
         check(not dock.progressBar.isVisible(), "no progress bar while nothing is downloading")
         QgsProject.instance().removeMapLayer(other.id())
 
@@ -962,6 +1121,7 @@ def main():
         choose(DEFAULT)
         select('SU12NE')
         copy_path = os.path.join(tmp, 'copy_test.tif')
+        answers.append(1)  # Save as...
         with mock.patch.object(mod.QFileDialog, "getSaveFileName", return_value=(copy_path, "")):
             msgs.clear()
             plugin.create_mosaic_from_selected()
@@ -971,9 +1131,11 @@ def main():
         copied = mod.QgsRasterLayer(copy_path, 'copy')
         check(copied.isValid() and copied.width() == rl.width() and msgs and "Created copy_test.tif" in msgs[-1][0],
               "Create mosaic: a GeoTIFF copy, made in the background and loaded")
+        check(plugin.grid.selected_tile_names() == [], "... and once it's loaded, the tile is deselected")
         copied = None
         # Saving over a GeoTIFF that's loaded (Windows locks it): asks, removes it from the project, replaces it
-        answers.append(0)  # Replace
+        select('SU12NE')
+        answers.extend([1, 0])  # Save as..., Replace
         asked.clear()
         with mock.patch.object(mod.QFileDialog, "getSaveFileName", return_value=(copy_path, "")):
             msgs.clear()
@@ -993,8 +1155,21 @@ def main():
         QgsProject.instance().addMapLayer(half)
         dock.cboLayer.setLayer(half)
         dock.chkCrop.setChecked(True)
-        check(dock.chkCrop.text() == 'Crop to: half', "'Crop to' names the layer it will use")
+        check(dock.chkCrop.text() == 'Crop to' and dock.cboLayer.currentLayer() is half
+              and plugin.grid.selected_tile_names() == ['SU12NE'],
+              "'Crop to' with the layer beside it: ticking it selected the tile beneath")
+        check(after.itemText(after.findData('tiles')) == 'Load the crop'
+              and after.view().isRowHidden(after.findData('mosaic'))
+              and not after.view().isRowHidden(after.findData('none')) and dock.btnLoadSelected.text() == 'Load crop',
+              "with 'Crop to' ticked the only way to load is the crop (or just download); Load selected says so")
+        dock.leGoTo.setText('SU 22 27')
+        msgs.clear()
+        dock.btnGoTo.click()
+        check(plugin.grid.selected_tile_names() == ['SU12NE'] and msgs and "follow the crop" in msgs[-1][0],
+              "while 'Crop to' is ticked, Go to only zooms: the tiles follow the crop")
+        dock.leGoTo.clear()
         clip_path = os.path.join(tmp, 'clip_test.tif')
+        answers.append(1)  # Save as...
         with mock.patch.object(mod.QFileDialog, "getSaveFileName", return_value=(clip_path, "")):
             plugin.create_mosaic_from_selected()
             wait_post()
@@ -1002,23 +1177,43 @@ def main():
         check(clipped.isValid() and clipped.width() == rl.width() // 2 and clipped.height() == rl.height(),
               "Create mosaic, cropped: a GeoTIFF cut to the polygon")
         cropped_vrt = os.path.join(tmp, 'cropped_test.vrt')
-        with mock.patch.object(mod.QFileDialog, "getSaveFileName", return_value=(cropped_vrt, "")):
+        select('SU12NE')
+        answers.append(1)  # Save as...
+        with mock.patch.object(mod.QFileDialog, "getSaveFileName", return_value=(cropped_vrt, "")) as save_dialog:
             plugin.create_mosaic_from_selected()
+        check(save_dialog.call_args and os.path.basename(save_dialog.call_args[0][2])
+              == 'England_Composite_DTM_2022_1m_SU12NE_cropped.vrt', "... a cropped one's suggested name says so")
         cropped = mod.QgsRasterLayer(cropped_vrt, 'cv')
         with open(cropped_vrt, encoding='utf-8') as fh:
             vrt_text = fh.read()
         check(cropped.isValid() and cropped.width() == rl.width() // 2 and '<Cutline>' in vrt_text
               and os.path.getsize(cropped_vrt) < 20000, "Create mosaic, cropped: a small VRT cut to the polygon")
         clipped = cropped = None
+
+        def cropped_layer(area):
+            found = [lyr for lyr in QgsProject.instance().mapLayers().values()
+                     if lyr.name().endswith(f'cropped to {area})')]
+            return found[0] if len(found) == 1 else None
+        select('SU12NE')
         msgs.clear()
         plugin.load_selected_tiles()
-        group_mosaic = [lyr for lyr in QgsProject.instance().mapLayers().values()
-                        if lyr.customProperty(mod.MOSAIC_PROPERTY) == 'England Composite DTM, 2022, 1 m']
-        check(len(group_mosaic) == 1 and group_mosaic[0].name().endswith('cropped to half)')
-              and os.path.basename(group_mosaic[0].source()).startswith('cropped_')
-              and group_mosaic[0].width() == rl.width() // 2 and "Cropped to 'half'" in msgs[-1][0],
-              "Load selected with 'Crop to this layer': the group's mosaic is cropped")
-        group_mosaic = None
+        layer_now = cropped_layer('half')
+        check(layer_now is not None and layer_now.name() == 'England Composite DTM, 2022, 1 m (1 tile, cropped to half)'
+              and os.path.basename(layer_now.source()).startswith('cropped_')
+              and layer_now.width() == rl.width() // 2 and "Cropped to 'half'" in msgs[-1][0],
+              "Load selected with 'Crop to': one layer, the tile cropped to the area's shape")
+        root_now = QgsProject.instance().layerTreeRoot()
+        select('SU12NE', 'SU12NW', 'SU22NW')  # SU22NW isn't under 'half'
+        before = len(QgsProject.instance().mapLayers())
+        msgs.clear()
+        plugin.load_selected_tiles()
+        layer_now = cropped_layer('half')
+        check(len(QgsProject.instance().mapLayers()) == before and "1 already in the project" in msgs[-1][0]
+              and "2 selected tiles are outside 'half'" in msgs[-1][0] and layer_now is not None
+              and root_now.findGroup('England Composite DTM, 2022, 1 m').findLayer(layer_now.id()) is not None,
+              "tiles outside the area aren't in the cropped layer, and the message says so (nothing else added)")
+        layer_now = root_now = None
+        select('SU12NE')
 
         def crop_layer(name, *wkts):
             crop = QgsVectorLayer('Polygon?crs=EPSG:27700', name, 'memory')
@@ -1030,11 +1225,6 @@ def main():
             dock.cboLayer.setLayer(crop)
             return crop
 
-        def group_mosaic_layer():
-            found = [lyr for lyr in QgsProject.instance().mapLayers().values()
-                     if lyr.customProperty(mod.MOSAIC_PROPERTY) == 'England Composite DTM, 2022, 1 m']
-            return found[0] if len(found) == 1 else None
-
         from osgeo import gdal as _gdal
         # Two sites 100 km apart: the crop is trimmed to the tiles, not the box around both sites
         x0, y0 = tile_origin('SU12NE')
@@ -1043,7 +1233,7 @@ def main():
                          f'{x0} {y0 + 5000}, {x0} {y0}))',
                          'POLYGON((517000 227000, 518000 227000, 518000 228000, 517000 227000))')
         plugin.load_selected_tiles()
-        layer_now = group_mosaic_layer()
+        layer_now = cropped_layer('far sites')
         check(layer_now is not None and layer_now.width() == 25 and layer_now.height() == 50,
               "a crop layer with far-apart sites: the crop is trimmed to the tiles (not a vast, empty grid)")
         # A drawn polygon that crosses itself is repaired, not refused
@@ -1051,16 +1241,16 @@ def main():
                                        f'{x0} {y0 + 5000}, {x0} {y0}))')
         msgs.clear()
         plugin.load_selected_tiles()
-        check(msgs and "Cropped to 'bow tie'" in msgs[-1][0] and group_mosaic_layer() is not None,
+        check(msgs and "Cropped to 'bow tie'" in msgs[-1][0] and cropped_layer('bow tie') is not None,
               "a self-crossing polygon is repaired and used for the crop")
-        # An area away from the tiles: they load uncropped, and the message says why
+        # An area away from the tiles: they load as downloaded, and the message says why
         away = crop_layer('away', 'POLYGON((517000 227000, 518000 227000, 518000 228000, 517000 227000))')
+        select('SU12NE')  # tiles picked elsewhere after choosing the area
         msgs.clear()
         plugin.load_selected_tiles()
-        layer_now = group_mosaic_layer()
-        check(msgs and "'away' doesn't overlap these tiles" in msgs[-1][0] and layer_now is not None
-              and 'cropped' not in layer_now.name(),
-              "a crop area away from the tiles: loaded uncropped, with the reason")
+        check(msgs and "'away' doesn't overlap these tiles" in msgs[-1][0] and cropped_layer('away') is None
+              and plugin.loaded_layer_for(storage.find_raster_files(DTM, 'SU12NE')[0]) is not None,
+              "a crop area away from the tiles: they load as downloaded, with the reason")
         layer_now = None
         QgsProject.instance().removeMapLayers([far.id(), bowtie.id(), away.id()])
         far = bowtie = away = None
@@ -1072,16 +1262,64 @@ def main():
         pds.SetProjection(QgsCoordinateReferenceSystem('EPSG:27700').toWkt())
         for band in range(1, 4):
             pds.GetRasterBand(band).Fill(120)
-            pds.GetRasterBand(band).WriteRaster(1, 1, 1, 1, bytes(1))
+            pds.GetRasterBand(band).WriteRaster(1, 1, 1, 1, bytes(1))  # black in every band (outside a flight)
+        pds.GetRasterBand(1).WriteRaster(2, 2, 1, 1, bytes(1))  # dark, but only one band at 0: part of the picture
         pds = None
         cut = mod.postprocess.cutline_from_geometries(
             [QgsGeometry.fromRect(QgsRectangle(x0, y0, x0 + 4, y0 + 4))], QgsCoordinateReferenceSystem('EPSG:27700'),
             photo)
         cropped_photo = mod.postprocess.crop_vrt(photo, os.path.join(tmp, 'photo_crop.vrt'), cut)
         pds = _gdal.Open(cropped_photo)
-        black = pds.GetRasterBand(1).ReadAsArray(1, 1, 1, 1)[0][0]
+        alpha = pds.GetRasterBand(pds.RasterCount).ReadAsArray().tolist()
+        dark = [int(pds.GetRasterBand(b).ReadAsArray(2, 2, 1, 1)[0][0]) for b in (1, 2, 3)]
+        bands, nodata = pds.RasterCount, pds.GetRasterBand(1).GetNoDataValue()
         pds = None
-        check(black == 0, f"cropped aerial photos keep black as no data (value {black})")
+        check(bands == 4 and nodata is None and alpha[1][1] == 0 and alpha[2][2] == 255 and dark == [0, 120, 120]
+              and alpha[0][0] == 255,
+              f"cropped photos: all-black is see-through (alpha), a dark pixel with one band at 0 isn't ({dark})")
+        cropped_night = mod.postprocess.crop_vrt(photo, os.path.join(tmp, 'night_crop.vrt'), cut, black_is_data=True)
+        pds = _gdal.Open(cropped_night)
+        night_alpha = pds.GetRasterBand(pds.RasterCount).ReadAsArray().tolist()
+        pds = None
+        check(night_alpha[1][1] == 255, "... night photos cropped: black stays (it's part of the picture)")
+        # A tile's photos joined into one layer: a photo's black (0) outside its flight doesn't hide the photo
+        # beneath, the fullest are drawn on top, and the photos' own pixel grid is kept (here 0.2 m off the square)
+
+        def photo_file(name, value, black_columns):
+            path = os.path.join(tmp, 'join', name)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            pds = _gdal.GetDriverByName('GTiff').Create(path, 10, 10, 3, _gdal.GDT_Byte)
+            pds.SetGeoTransform((x0 + 0.2, 0.4, 0, y0 + 4.2, 0, -0.4))
+            pds.SetProjection(QgsCoordinateReferenceSystem('EPSG:27700').toWkt())
+            for band in range(1, 4):
+                pds.GetRasterBand(band).Fill(value)
+                for column in black_columns:
+                    pds.GetRasterBand(band).WriteRaster(column, 0, 1, 10, bytes(10))
+            pds = None
+            return path
+        photos_in = [photo_file('a_left.tif', 100, range(5, 10)), photo_file('b_right.tif', 200, range(0, 5)),
+                     photo_file('c_sparse.tif', 50, range(0, 9))]
+        joined = mod.postprocess.tile_vrt(photos_in, os.path.join(tmp, 'join', 'mosaics'), 'SU12NE',
+                                          (x0, y0, x0 + 5000, y0 + 5000))
+        pds = _gdal.Open(joined)
+        jgt = pds.GetGeoTransform()
+        row_values = pds.GetRasterBand(1).ReadAsArray(1, 12490, 10, 1)[0].tolist()
+        pds = None
+        check(abs(jgt[0] - (x0 - 0.2)) < 1e-6 and abs(jgt[3] - (y0 + 5000.2)) < 1e-6
+              and row_values == [100] * 5 + [200] * 5,
+              f"a tile's photos joined: black never hides the photo beneath, the fullest on top, pixels on the photos' "
+              f"own grid ({row_values})")
+        pds = _gdal.Open(joined)
+        check(all(pds.GetRasterBand(b).GetNoDataValue() is None for b in (1, 2, 3)),
+              "... with no value declared as no data (a dark pixel with a band at 0 is still part of the picture)")
+        pds = None
+        night = mod.postprocess.tile_vrt(photos_in, os.path.join(tmp, 'join', 'mosaics'), 'SU12NE',
+                                         (x0, y0, x0 + 5000, y0 + 5000), black_is_data=True)
+        pds = _gdal.Open(night)
+        night_row = pds.GetRasterBand(1).ReadAsArray(1, 12490, 10, 1)[0].tolist()
+        pds = None
+        check(night != joined and night_row == [0] * 9 + [50],
+              f"night photos are joined as they are: their black is part of the picture ({night_row})")
         # Same via the Processing tool: area = the half-tile polygon; a cropped VRT and a clipped GeoTIFF
         import processing
         proc_dir = tempfile.mkdtemp()
@@ -1097,7 +1335,8 @@ def main():
         clipped_p = vrt_p = None
         shutil.rmtree(proc_dir, ignore_errors=True)
 
-        dock.cboLayer.setLayer(points)
+        dock.cboLayer.setLayer(no_polygons)
+        select('SU12NE')
         msgs.clear()
         plugin.load_selected_tiles()
         check(msgs and msgs[-1][1] == Qgis.MessageLevel.Warning and "Loaded uncropped: 'sites' has no polygons"
@@ -1105,22 +1344,26 @@ def main():
         dock.cboLayer.setLayer(half)
 
         # --- "Load tiles after downloading": with 'Crop to this layer', download and crop in one go
-        dock.chkLoadAfterDownload.setChecked(True)
-        check(QSettings().value(mod.SETTINGS_KEY_LOAD_AFTER, False, type=bool), "load-after-download option saved")
+        choose_after('tiles')
+        check(QSettings().value(mod.SETTINGS_KEY_AFTER_DOWNLOAD) == 'tiles', "step 3's choice of loading is saved")
         root = QgsProject.instance().layerTreeRoot()
         if root.findGroup('England Composite DTM, 2022, 1 m'):
             root.removeChildNode(root.findGroup('England Composite DTM, 2022, 1 m'))
-        server.responses = {'SU1525': [(200, tile_zip_bytes('SU12NE'))]}
-        select('SU12NE')
+        server.responses = {'SU1525': [(200, tile_zip_bytes('SU12NE'))], 'SU1025': [(200, tile_zip_bytes('SU12NW'))]}
+        server.urls.clear()
+        select('SU12NE', 'SU12NW')  # SU12NW selected too (QGIS's own select tools can), though the crop doesn't need it
         answers.append(1)  # Download again
         msgs.clear()
         plugin.download_selected_tiles()
         wait_for_task(plugin)
-        group_mosaic = [lyr for lyr in QgsProject.instance().mapLayers().values()
-                        if lyr.customProperty(mod.MOSAIC_PROPERTY) == 'England Composite DTM, 2022, 1 m']
-        check(len(group_mosaic) == 1 and group_mosaic[0].name().endswith('cropped to half)') and msgs
-              and "Loaded 1 layer" in msgs[-1][0], "download and crop in one go: loads cropped after downloading")
-        group_mosaic = None
+        check(server.urls == [f'{BASE}/lidar_composite_dtm/2022/1/SU1525']
+              and any("left out: 'Crop to' is ticked" in m[0] and 'SU12NW' in (m[2] or '') for m in msgs),
+              "with 'Crop to' ticked only the tiles the crop needs are downloaded (another selected tile is left out)")
+        layers_now = [n.layer().name() for n in root.findGroup('England Composite DTM, 2022, 1 m').findLayers()] \
+            if root.findGroup('England Composite DTM, 2022, 1 m') else []
+        check(layers_now == ['England Composite DTM, 2022, 1 m (1 tile, cropped to half)'] and msgs
+              and "Loaded 1 layer." in msgs[-1][0] and plugin.grid.selected_tile_names() == [],
+              "download and crop in one go: loads cropped after downloading (and deselects the tile)")
         dock.chkCrop.setChecked(False)
         QgsProject.instance().removeMapLayer(half.id())
         half = f = rl = None
@@ -1129,14 +1372,56 @@ def main():
         msgs.clear()
         plugin.download_selected_tiles()
         wait_for_task(plugin)
-        group_mosaic = [lyr for lyr in QgsProject.instance().mapLayers().values()
-                        if lyr.customProperty(mod.MOSAIC_PROPERTY) == 'England Composite DTM, 2022, 1 m']
-        check(len(group_mosaic) == 1 and group_mosaic[0].name().endswith('(2 tiles)')
-              and 'mosaic_2_tiles' in group_mosaic[0].source()
-              and msgs and "Loaded 1 layer" in msgs[-1][0],
-              "tiles load automatically after downloading, into the group's (uncropped) mosaic")
-        group_mosaic = None
-        dock.chkLoadAfterDownload.setChecked(False)
+        layers_now = [n.layer().name() for n in root.findGroup('England Composite DTM, 2022, 1 m').findLayers()]
+        check(layers_now == ['England Composite DTM, 2022, 1 m (1 tile, cropped to half)', 'TQ09SW']
+              and msgs and "Loaded 1 layer." in msgs[-1][0],
+              "tiles load automatically after downloading, a layer per tile (the cropped layer left as it is)")
+        layers_now = None
+        # "Load as a temporary mosaic": for two or more selected tiles that make a square or rectangle
+        select('SU12NE')
+        check(not mosaic_offered(), "a temporary mosaic after downloading isn't offered for one tile")
+        select('SU12NE', 'SU12SW')
+        check(not mosaic_offered(), "... nor for tiles meeting only at a corner")
+        select('SU12NE', 'SU12NW', 'SU32NW')
+        check(not mosaic_offered(), "... nor with a tile on its own among them")
+        select('SU12NE', 'SU12NW', 'SU12SE')
+        check(not mosaic_offered(), "... nor for tiles that don't make a square or rectangle (an L)")
+        select('SU12NE', 'SU12NW')
+        check(mosaic_offered(), "... but is for tiles that make a rectangle")
+        choose_after('mosaic')
+        select('SU12NE')
+        check(after.currentData() == 'tiles' and QSettings().value(mod.SETTINGS_KEY_AFTER_DOWNLOAD) == 'mosaic',
+              "for a tile on its own the tiles load individually instead, and the choice is kept...")
+        select('SU12NE', 'SU12NW')
+        check(after.currentData() == 'mosaic', "... for when the selected tiles make a rectangle again")
+        server.responses = {'SU1525': [(200, tile_zip_bytes('SU12NE'))], 'SU1025': [(200, tile_zip_bytes('SU12NW'))]}
+        answers.append(1)  # Download all again
+        msgs.clear()
+        plugin.download_selected_tiles()
+        wait_for_task(plugin)
+        temporary = QgsProject.instance().mapLayersByName('SU12NE_SU12NW')
+        check(len(temporary) == 1 and temporary[0].isValid()
+              and os.path.normcase(os.path.normpath(temporary[0].source())).startswith(
+                  os.path.normcase(os.path.normpath(mod.QgsProcessingUtils.tempFolder())))
+              and root.findGroup('England Composite DTM, 2022, 1 m').findLayer(temporary[0].id()) is not None
+              and plugin.grid.selected_tile_names() == [],
+              "downloaded with 'Load as a temporary mosaic': one temporary mosaic of the tiles, then deselected")
+        QgsProject.instance().removeMapLayers([lyr.id() for lyr in temporary])
+        temporary = None
+        # A rectangle whose tiles don't all download (SU13SE has none of this dataset): loaded individually instead
+        select('SU12NE', 'SU13SE')
+        wait_for_search(plugin)
+        check(after.currentData() == 'mosaic', "(two tiles side by side: the temporary mosaic is chosen)")
+        answers.append(0)  # Skip existing
+        msgs.clear()
+        plugin.download_selected_tiles()
+        wait_for_task(plugin)
+        check(not QgsProject.instance().mapLayersByName('SU12NE_SU13SE') and msgs
+              and "don't fill a square or rectangle" in msgs[-1][0],
+              "... but if the tiles downloaded don't fill one, they load individually, and the message says why")
+        choose_after('none')
+        select('SU12NE', 'TQ09SW')
+        plugin.load_selected_tiles()
         before = len(QgsProject.instance().mapLayers())
         select('SU12NE', 'TQ09SW')
         plugin.load_selected_tiles()
@@ -1152,26 +1437,30 @@ def main():
                     'release': (QEvent.Type.MouseButtonRelease, 'canvasReleaseEvent'),
                     'double': (QEvent.Type.MouseButtonDblClick, 'canvasDoubleClickEvent')}
 
-        def mouse(tool, kind, x, y):
-            """Send a left-button mouse event at map position (x, y) to a map tool."""
+        no_key = Qt.KeyboardModifier.NoModifier
+        shift, ctrl = Qt.KeyboardModifier.ShiftModifier, Qt.KeyboardModifier.ControlModifier
+
+        def mouse(tool, kind, x, y, keys=no_key):
+            """Send a left-button mouse event at map position (x, y) to a map tool (keys: Shift / Ctrl held)."""
             p = canvas.getCoordinateTransform().transform(x, y)
             event_type, handler = handlers[kind]
             button = Qt.MouseButton.LeftButton
             try:
-                event = QgsMapMouseEvent(canvas, event_type, QPoint(round(p.x()), round(p.y())), button, button)
+                event = QgsMapMouseEvent(canvas, event_type, QPoint(round(p.x()), round(p.y())), button, button, keys)
             except TypeError:  # QPointF positions on newer QGIS
-                event = QgsMapMouseEvent(canvas, event_type, QPointF(round(p.x()), round(p.y())), button, button)
+                event = QgsMapMouseEvent(canvas, event_type, QPointF(round(p.x()), round(p.y())), button, button,
+                                         keys)
             getattr(tool, handler)(event)
 
-        def click(tool, x, y):
-            mouse(tool, 'press', x, y)
-            mouse(tool, 'release', x, y)
+        def click(tool, x, y, keys=no_key):
+            mouse(tool, 'press', x, y, keys)
+            mouse(tool, 'release', x, y, keys)
 
-        def drag(tool, x0, y0, x1, y1):
-            mouse(tool, 'press', x0, y0)
-            mouse(tool, 'move', (x0 + x1) / 2, (y0 + y1) / 2)
-            mouse(tool, 'move', x1, y1)
-            mouse(tool, 'release', x1, y1)
+        def drag(tool, x0, y0, x1, y1, keys=no_key):
+            mouse(tool, 'press', x0, y0, keys)
+            mouse(tool, 'move', (x0 + x1) / 2, (y0 + y1) / 2, keys)
+            mouse(tool, 'move', x1, y1, keys)
+            mouse(tool, 'release', x1, y1, keys)
 
         dock.btnPickTiles.click()
         check(canvas.mapTool() is plugin.pick_tool and dock.btnPickTiles.isChecked(),
@@ -1179,46 +1468,37 @@ def main():
         plugin.grid.clear_selection()
         click(plugin.pick_tool, 417500, 127500)
         check(plugin.grid.selected_tile_names() == ['SU12NE'], "clicking a tile selects it")
+        # ... the way QGIS's own Select Features tool does: on its own a click or a box replaces the selection
         click(plugin.pick_tool, 412500, 127500)
-        check(sorted(plugin.grid.selected_tile_names()) == ['SU12NE', 'SU12NW'], "clicking another tile adds it")
-        click(plugin.pick_tool, 417500, 127500)
-        check(plugin.grid.selected_tile_names() == ['SU12NW'], "clicking a selected tile removes it")
+        check(plugin.grid.selected_tile_names() == ['SU12NW'], "clicking another tile selects that one instead")
+        click(plugin.pick_tool, 417500, 127500, shift)
+        check(sorted(plugin.grid.selected_tile_names()) == ['SU12NE', 'SU12NW'], "Shift+click adds a tile")
+        click(plugin.pick_tool, 417500, 127500, shift)
+        check(plugin.grid.selected_tile_names() == ['SU12NW'], "Shift+click on a selected tile removes it")
+        click(plugin.pick_tool, 417500, 127500, ctrl)
+        click(plugin.pick_tool, 412500, 127500, ctrl)
+        check(plugin.grid.selected_tile_names() == ['SU12NE'], "Ctrl+click adds and removes in the same way")
+        four = ['SU12NE', 'SU12NW', 'SU12SE', 'SU12SW']
         drag(plugin.pick_tool, 412000, 122000, 418000, 128000)
-        check(sorted(plugin.grid.selected_tile_names()) == ['SU12NE', 'SU12NW', 'SU12SE', 'SU12SW'],
-              "dragging a box adds the tiles under it")
+        check(sorted(plugin.grid.selected_tile_names()) == four, "dragging a box selects the tiles under it")
+        click(plugin.pick_tool, 412500, 122500)
+        check(plugin.grid.selected_tile_names() == ['SU12SW'],
+              "a click on its own then selects just that tile: the others are deselected")
+        drag(plugin.pick_tool, 416000, 126000, 419000, 129000, shift)  # a box inside SU12NE
+        check(sorted(plugin.grid.selected_tile_names()) == ['SU12NE', 'SU12SW'], "Shift+drag adds the tiles under it")
+        drag(plugin.pick_tool, 411000, 121000, 414000, 124000, ctrl)  # a box inside SU12SW
+        check(plugin.grid.selected_tile_names() == ['SU12NE'], "Ctrl+drag removes the tiles under it")
+        drag(plugin.pick_tool, 412000, 122000, 418000, 128000)
+        drag(plugin.pick_tool, 416000, 126000, 419000, 129000, shift | ctrl)
+        check(plugin.grid.selected_tile_names() == ['SU12NE'],
+              "Ctrl+Shift+drag keeps only the selected tiles under it")
+        drag(plugin.pick_tool, 412000, 122000, 418000, 128000)
+        check(sorted(plugin.grid.selected_tile_names()) == four, "... and a box on its own replaces the selection")
 
-        dock.btnDrawArea.click()
-        check(canvas.mapTool() is plugin.draw_tool and dock.btnDrawArea.isChecked()
-              and not dock.btnPickTiles.isChecked(), "'Draw area' swaps tools; the buttons follow")
-        drag(plugin.draw_tool, 416000, 126000, 419000, 129000)
-        areas = QgsProject.instance().mapLayersByName(mod.AREA_LAYER_NAME)
-        check(plugin.grid.selected_tile_names() == ['SU12NE'], "a drawn rectangle selects the tiles under it")
-        check(len(areas) == 1 and areas[0].featureCount() == 1 and dock.cboLayer.currentLayer() is areas[0],
-              "the drawn area is kept as a layer, chosen for 'Tiles under layer' / 'Crop to'")
-        check(dock.chkCrop.isChecked() and dock.chkCrop.text() == 'Crop to: Drawn area',
-              "drawing an area ticks 'Crop to', naming the drawn area")
-        # A triangle inside SU12NW. Zoomed in, so clicks land within a few metres of these points.
-        canvas.setExtent(QgsRectangle(411000, 124000, 416000, 129000))
-        for x, y in ((413000, 126000), (414000, 126000)):
-            click(plugin.draw_tool, x, y)
-        click(plugin.draw_tool, 414000, 127000)
-        mouse(plugin.draw_tool, 'double', 414000, 127000)
-        areas = QgsProject.instance().mapLayersByName(mod.AREA_LAYER_NAME)
-        feature = next(areas[0].getFeatures()) if areas else None
-        check(plugin.grid.selected_tile_names() == ['SU12NW'], "a drawn polygon selects the tiles under it")
-        check(len(areas) == 1 and areas[0].featureCount() == 1
-              and abs(feature['area_ha'] - feature.geometry().area() / 1e4) < 0.01,
-              "drawing again replaces the drawn area (one layer, one area, its size recorded)")
-        feature = None
-        dock.btnDrawArea.click()
-        check(canvas.mapTool() is not plugin.draw_tool and not dock.btnDrawArea.isChecked(),
-              "unticking 'Draw area' puts the tool away")
-        areas = None
-        dock.btnClearSelection.click()
-        check(plugin.grid.selected_tile_names() == []
-              and not QgsProject.instance().mapLayersByName(mod.AREA_LAYER_NAME),
-              "Clear: clears the selection and removes the drawn area")
-        check(not dock.chkCrop.isChecked(), "... and unticks 'Crop to' (nothing left to crop to)")
+        dock.btnDeselect.click()
+        check(plugin.grid.selected_tile_names() == [] and canvas.mapTool() is plugin.pick_tool,
+              "the deselect icon deselects all the tiles (picking carries on)")
+        dock.btnPickTiles.click()
         canvas.setExtent(QgsRectangle(410000, 120000, 425000, 135000))
 
         # Coverage: tiles in view that have the chosen dataset but aren't downloaded
@@ -1233,9 +1513,9 @@ def main():
               "coverage listed in the legend")
         note = dock.lblCoverageNote
         shaded = coverage_rule.count("'") // 2
-        check(not note.isHidden() and note.text().startswith(f"{shaded:,} tile{'s' if shaded != 1 else ''} in view "
-                                                             "shaded blue"),
-              f"the note under the tick box says how many tiles are shaded ({note.text()!r})")
+        check(note.isHidden() and f"{shaded:,} tile{'s' if shaded != 1 else ''} in view shaded blue"
+              in dock.chkCoverage.toolTip(),
+              "how many tiles are shaded is in the tick box's tooltip (no note under it, to save room)")
         canvas.setExtent(QgsRectangle(0, 0, 700000, 1300000))
         wait_for_coverage(plugin)
         check('Available to download (in view)' not in style_rules(layer) and note.text().startswith('Zoom in')
@@ -1251,39 +1531,74 @@ def main():
               "a failed coverage check is said under the tick box")
         plugin.coverage_timer.start()
         wait_for_coverage(plugin)
-        check(plugin.coverage_error == '' and 'shaded blue' in note.text(), "... and cleared by the next check")
+        check(plugin.coverage_error == '' and note.isHidden() and 'shaded blue' in dock.chkCoverage.toolTip(),
+              "... and cleared by the next check")
         dock.chkCoverage.setChecked(False)
         check('Available to download (in view)' not in style_rules(layer) and note.isHidden()
               and not QSettings().value(mod.SETTINGS_KEY_COVERAGE, type=bool), "unticking removes the coverage")
 
-        # Survey dates from the Composite DTM's metadata
-        write_survey_metadata(os.path.join(DTM, 'SU12NE', 'SU12ne_DTM_1m_Metadata.gpkg'),
-                              [('F_DTM_P_10781', 2018, 415000, 125000, 417500, 130000),
-                               ('F0211608', 2020, 417500, 125000, 420000, 130000)])
+        # Survey dates: on or off for the selected tiles, a layer per tile read from the survey file that came with it
+        survey_file = os.path.join(DTM, 'SU12NE', 'SU12ne_DTM_1m_Metadata.gpkg')
+        write_survey_metadata(survey_file, [('F_DTM_P_10781', 2018, 415000, 125000, 417500, 130000),
+                                            ('F0211608', 2020, 417500, 125000, 420000, 130000)])
         select('SU12NE', 'SU12NW')
+        check(dock.btnSurveyDates.isEnabled() and not dock.btnSurveyDates.isChecked(),
+              "Survey dates can be switched on for downloaded Composite DTM tiles")
         msgs.clear()
-        plugin.show_survey_dates()
-        surveys = QgsProject.instance().mapLayersByName('Survey dates (1 tile)')
-        check(len(surveys) == 1 and surveys[0].featureCount() == 2, "survey dates: one layer of the tile's surveys")
+        dock.btnSurveyDates.click()
+        surveys = QgsProject.instance().mapLayersByName('SU12NE survey dates')
         survey = surveys[0] if surveys else None
-        values = sorted((f['year'], f['survey'], str(f['flown_from'].toString('yyyy-MM-dd')))
-                        for f in survey.getFeatures())
+        check(len(surveys) == 1 and survey.featureCount() == 2 and plugin.grid.selected_tile_names() == []
+              and os.path.normcase(survey.source().split('|')[0]) == os.path.normcase(survey_file)
+              and QgsProject.instance().layerTreeRoot().findGroup(mod.SURVEY_DATES_GROUP).findLayer(survey.id()),
+              "Survey dates on: a layer per tile, reading the survey file that came with it (in a 'Survey dates' "
+              "group); the tiles are deselected")
+        values = sorted((f['SRVY_YEAR'], f['FILENAME'], f['SD_FLOWN'].toString('yyyy-MM-dd'))
+                        for f in survey.getFeatures()) if survey else []
         check(values == [(2018, 'F_DTM_P_10781', '2018-01-29'), (2020, 'F0211608', '2020-01-29')],
-              "survey dates: survey, year and flown dates read from the metadata")
+              "survey dates: the tile's surveys, with the year and dates flown, as they are in the file")
         check(survey.renderer().type() == 'categorizedSymbol'
               and [c.label() for c in survey.renderer().categories()] == ['2018', '2020']
-              and survey.labelsEnabled() and 'flown_from' in survey.mapTipTemplate(),
-              "survey dates coloured and labelled by year, with flown dates in the map tip")
-        check(msgs and "1 tile(s) have no survey metadata" in msgs[-1][0], "tiles without metadata are reported")
-        plugin.show_survey_dates()
-        check(len(QgsProject.instance().mapLayersByName('Survey dates (1 tile)')) == 1, "survey dates not loaded twice")
+              and survey.labelsEnabled() and 'SD_FLOWN' in survey.mapTipTemplate(),
+              "survey dates coloured and labelled by year, with the dates flown in the map tip")
+        check(msgs and "1 tile came without survey dates" in msgs[-1][0] and 'SU12NW' in (msgs[-1][2] or ''),
+              "a tile without survey dates is reported")
+        select('SU12NE')
+        check(dock.btnSurveyDates.isChecked(), "the button shows as on while the tile's survey dates are shown")
+        dock.btnSurveyDates.click()
+        check(not QgsProject.instance().mapLayersByName('SU12NE survey dates') and not dock.btnSurveyDates.isChecked()
+              and QgsProject.instance().layerTreeRoot().findGroup(mod.SURVEY_DATES_GROUP) is None,
+              "Survey dates off: the tile's survey dates are removed (and the empty group)")
+        survey = surveys = None
+        dock.btnSurveyDates.click()  # on (the tile is deselected)
+        select('SU12NE')
+        dock.btnSurveyDates.click()  # off
+        dock.btnSurveyDates.click()  # on again
+        check(len(QgsProject.instance().mapLayersByName('SU12NE survey dates')) == 1, "on, off and on again: one layer")
+        write_survey_metadata(os.path.join(DTM, 'SU12NW', 'SU12nw_DTM_1m_Metadata.gpkg'),
+                              [('F_OLDER', 2016, 410000, 125000, 412500, 130000),
+                               ('F_DTM_P_10781', 2018, 412500, 125000, 415000, 130000)])
+        select('SU12NE', 'SU12NW')
+        dock.btnSurveyDates.click()  # (on for SU12NE: off)
+        dock.btnSurveyDates.click()  # on, for both
+        tile_colours = {lyr.name(): {c.label(): c.symbol().color().name() for c in lyr.renderer().categories()}
+                        for lyr in QgsProject.instance().mapLayers().values() if lyr.name().endswith('survey dates')}
+        ne, nw = tile_colours.get('SU12NE survey dates', {}), tile_colours.get('SU12NW survey dates', {})
+        check(ne.get('2018') and ne.get('2018') == nw.get('2018') and nw.get('2016') != ne.get('2020')
+              and int(nw.get('2016', '#000000')[1:3], 16) > int(ne.get('2020', '#000000')[1:3], 16),
+              f"the tiles' survey dates share one colour scale, oldest red to newest blue ({tile_colours})")
         select('SU22NW')
         msgs.clear()
-        plugin.show_survey_dates()
-        check(msgs and msgs[-1][1] == Qgis.MessageLevel.Warning and "Composite" in msgs[-1][0],
-              "no metadata: says where survey dates come from")
-        QgsProject.instance().removeMapLayer(survey.id())
-        survey = surveys = None
+        dock.btnSurveyDates.click()
+        check(msgs and msgs[-1][1] == Qgis.MessageLevel.Warning and "came without survey dates" in msgs[-1][0]
+              and not dock.btnSurveyDates.isChecked(), "a tile without survey dates: says so, and the button stays off")
+        plugin.set_dataset(mod.api.Dataset(*NLP_DTM))
+        app.processEvents()
+        check(not dock.btnSurveyDates.isEnabled(), "Survey dates is greyed out for data that doesn't come with them")
+        plugin.set_dataset(mod.api.DEFAULT_DATASET)
+        app.processEvents()
+        QgsProject.instance().removeMapLayers([lyr.id() for lyr in QgsProject.instance().mapLayers().values()
+                                               if lyr.name().endswith('survey dates')])
 
         # --- v0.7.1: go to a grid reference, postcode or place
         def go(text):
@@ -1328,16 +1643,27 @@ def main():
         select('SU12NE')  # which has National LIDAR Programme data
         wait_for_search(plugin)
         check(choose(NLP_DTM), "NLP DTM listed for SU12NE")
-        nlp_text = dock.lblDatasetInfo.text()
+        nlp_text = dock.btnDatasetInfo.toolTip()
         choose(DEFAULT)
-        check('National LIDAR Programme' in nlp_text and 'bare earth' in dock.lblDatasetInfo.text(),
-              "the chosen dataset is described under the menu")
+        check('National LIDAR Programme' in nlp_text and 'bare earth' in dock.btnDatasetInfo.toolTip()
+              and 'bare earth' in dock.btnDataset.toolTip(),
+              "the chosen dataset is described in the menu button's tooltip and the info icon's")
+        entries = [a for _, a in menu_entries() if a.data() == '|'.join(DEFAULT)]
+        check(dock.btnDataset.menu().toolTipsVisible() and entries and 'bare earth' in entries[0].toolTip(),
+              "... and each dataset in the menu says what it is, on hover")
+        dialog_module = sys.modules[type(dock).__module__]
+        with mock.patch.object(dialog_module.QtWidgets.QWhatsThis, 'showText') as popup:
+            dock.btnDatasetInfo.click()
+        check(popup.called and 'bare earth' in popup.call_args[0][1],
+              "clicking the info icon shows the description in a pop-up")
 
         # Attribution and elevation surfaces
         select('SU12NE', 'SU12NW')
         plugin.load_selected_tiles()
-        colours = [lyr for lyr in QgsProject.instance().mapLayers().values()
-                   if lyr.customProperty(mod.MOSAIC_PROPERTY) == 'England Composite DTM, 2022, 1 m']
+        dtm_group = QgsProject.instance().layerTreeRoot().findGroup('England Composite DTM, 2022, 1 m')
+        colours = [n.layer() for n in dtm_group.findLayers()
+                   if n.layer().customProperty(mod.COLOURS_PROPERTY) is not None] if dtm_group else []
+        dtm_group = None
         rights = colours[0].metadata().rights() if colours else []
         check(rights == ['© Environment Agency copyright and/or database right 2022. All rights reserved.']
               and 'Open Government Licence' in colours[0].metadata().licenses()[0]
@@ -1361,7 +1687,7 @@ def main():
         check(QgsProject.instance().crs().authid() == 'EPSG:27700' and bar.popWidget.called,
               "the offer switches the project to EPSG:27700 and closes")
 
-        # --- v0.9.0: point clouds as one virtual point cloud; saved as one, or cropped (QGIS 3.32+ with PDAL)
+        # --- point clouds load as downloaded, a layer per tile (QGIS 3.32+ with PDAL): never joined or cropped
         if mod.pointclouds.available():
             cloud_dataset = mod.api.Dataset('lidar_point_cloud', '2015', 'NaN')
             for tile in ('SU12NE', 'SU12NW'):
@@ -1371,31 +1697,27 @@ def main():
             plugin.set_dataset(cloud_dataset)
             app.processEvents()
             select('SU12NE')
+            check(plugin.dataset == cloud_dataset,
+                  "a dataset downloaded for the selected tile stays chosen, though the service doesn't list it there")
             plugin.load_selected_tiles()
+            first = os.path.join(tmp, 'lidar_point_cloud', '2015', 'SU12NE', 'SU12NE_P_1_20150101.las')
             clouds = [lyr for lyr in QgsProject.instance().mapLayers().values()
-                      if isinstance(lyr, mod.QgsPointCloudLayer) and lyr.name().startswith('Point cloud')]
-            check(len(clouds) == 1 and clouds[0].providerType() == 'vpc' and clouds[0].name() == 'Point cloud (1 tile)'
-                  and clouds[0].crs().authid() == 'EPSG:27700' and clouds[0].pointCount() == 10000
-                  and clouds[0].renderer().type() == 'classified',
-                  "point clouds load as one virtual point cloud, in British National Grid, coloured by class")
+                      if isinstance(lyr, mod.QgsPointCloudLayer) and lyr.name() in ('SU12NE', 'SU12NW')]
+            check(len(clouds) == 1 and clouds[0].name() == 'SU12NE'
+                  and os.path.normcase(clouds[0].source()) == os.path.normcase(first)
+                  and clouds[0].crs().authid() == 'EPSG:27700' and clouds[0].renderer().type() == 'classified',
+                  "a point cloud tile loads as its own layer, reading the downloaded file (British National Grid, "
+                  "coloured by class)")
             select('SU12NE', 'SU12NW')
             plugin.load_selected_tiles()
-            clouds = [lyr for lyr in QgsProject.instance().mapLayers().values()
-                      if isinstance(lyr, mod.QgsPointCloudLayer) and lyr.name().startswith('Point cloud')]
-            check(len(clouds) == 1 and clouds[0].name() == 'Point cloud (2 tiles)' and clouds[0].pointCount() == 20000,
-                  "loading more tiles extends the same virtual point cloud")
+            clouds = sorted(lyr.name() for lyr in QgsProject.instance().mapLayers().values()
+                            if isinstance(lyr, mod.QgsPointCloudLayer) and lyr.name() in ('SU12NE', 'SU12NW'))
+            check(clouds == ['SU12NE', 'SU12NW'], "loading another tile adds its own layer (the first is left alone)")
             clouds = None
+            select('SU12NE', 'SU12NW')
+            check(not mosaic_offered(), "point clouds: no temporary mosaic after downloading either")
 
-            vpc_out = os.path.join(tmp, 'saved_cloud.vpc')
-            with mock.patch.object(mod.QFileDialog, "getSaveFileName", return_value=(vpc_out, "")):
-                msgs.clear()
-                plugin.create_mosaic_from_selected()
-            saved = QgsProject.instance().mapLayersByName('saved_cloud')
-            check(os.path.exists(vpc_out) and len(saved) == 1 and saved[0].pointCount() == 20000
-                  and msgs and "Created saved_cloud.vpc" in msgs[-1][0],
-                  "Create mosaic on point clouds: a virtual point cloud")
-            QgsProject.instance().removeMapLayer(saved[0].id())
-            saved = None
+            # Never joined into a mosaic or cropped, even with "Crop to" ticked: no save dialog, nothing made
             patch = QgsVectorLayer('Polygon?crs=EPSG:27700', 'patch', 'memory')
             feature = QgsFeature()
             feature.setGeometry(QgsGeometry.fromWkt('POLYGON((416000 126000, 418000 126000, 418000 128000, '
@@ -1404,20 +1726,13 @@ def main():
             QgsProject.instance().addMapLayer(patch)
             dock.cboLayer.setLayer(patch)
             dock.chkCrop.setChecked(True)
-            copc_out = os.path.join(tmp, 'cloud_crop.copc.laz')
-            with mock.patch.object(mod.QFileDialog, "getSaveFileName", return_value=(copc_out, "")):
+            msgs.clear()
+            with mock.patch.object(mod.QFileDialog, "getSaveFileName") as save_dialog:
                 plugin.create_mosaic_from_selected()
-                wait_post(120)
-            clipped = mod.QgsPointCloudLayer(copc_out, 'clip', 'copc')
-            check(clipped.isValid() and clipped.crs().authid() == 'EPSG:27700' and 0 < clipped.pointCount() < 20000
-                  and QgsProject.instance().mapLayersByName('cloud_crop'),
-                  "Create mosaic on point clouds, cropped: a COPC file in British National Grid, loaded")
-            check(not os.path.exists(copc_out[:-len('.copc.laz')] + '.copc.copc.laz'),
-                  "... loaded as COPC, so QGIS doesn't make a second copy of it")
-            clipped = None
+            check(not dock.btnCreateVRT.isEnabled() and not save_dialog.called and plugin.post_task is None
+                  and msgs and "Point clouds aren't joined" in msgs[-1][0],
+                  "point clouds are never joined or cropped (Create mosaic greyed out, even with Crop to ticked)")
             dock.chkCrop.setChecked(False)
-            for crop_layer in QgsProject.instance().mapLayersByName('cloud_crop'):
-                QgsProject.instance().removeMapLayer(crop_layer.id())
             QgsProject.instance().removeMapLayer(patch.id())
             patch = feature = None  # QGIS deleted the layer: keep no wrapper
             plugin.set_dataset(mod.api.DEFAULT_DATASET)
@@ -1484,7 +1799,31 @@ def main():
         check(dialog.isVisible() and dtm_row >= 0 and spare_row >= 0
               and dialog.tree.topLevelItem(dtm_row).text(1) == str(len(plugin.download_rows[dtm_row][2]))
               and 'Free on this drive' in dialog.lblSummary.text(), "My downloads lists each survey with its size")
-        choose(NLP_DTM)
+        # "Shaded for": the same surveys in the panel, to switch the grid's shading with no tiles selected
+        choose(DEFAULT)
+        dock.btnShaded.menu().aboutToShow.emit()  # as opening the menu does
+        shaded = {a.text(): a for a in dock.btnShaded.menu().actions()}
+        expected = [plugin.shaded_label(d, len(t)) for d, _, t, _ in plugin.download_rows if t]
+        check(list(shaded) == expected and len(expected) >= 2
+              and [t.rsplit(' (', 1)[0] for t, a in shaded.items() if a.isChecked()] == [dock.btnShaded.fullText()],
+              "'Shaded for' lists every survey downloaded with its tile count, the chosen one ticked")
+        plugin.grid.clear_selection()
+        next(a for t, a in shaded.items() if t.startswith('England DSM (individual surveys), 2011, 1 m')).trigger()
+        app.processEvents()
+        shaded = None
+        check(plugin.dataset == mod.api.Dataset('lidar_tiles_dsm', '2011', '1')
+              and dock.btnShaded.fullText() == 'England DSM (individual surveys), 2011, 1 m'
+              and '(1 tile)' in dock.btnShaded.toolTip()
+              and "'SU12NE'" in style_rules(layer).get('Downloaded', ('',))[0]
+              and dock.btnDataset.fullText() == mod.SELECT_TILES_PROMPT,
+              "choosing one there shades its tiles, with none selected (step 2 still asks for a tile)")
+        select('SU12NE')
+        app.processEvents()
+        check(plugin.dataset == mod.api.Dataset('lidar_tiles_dsm', '2011', '1')
+              and dock.btnDataset.fullText().startswith('England DSM (individual surveys), 2011, 1 m'),
+              "... and step 2 shows the same dataset once a tile is selected")
+        check(choose(NLP_DTM) and dock.btnShaded.fullText().startswith('England National LIDAR Programme DTM, 2019,'),
+              "'Shaded for' follows the dataset chosen in step 2")
         dialog.select_row(dtm_row)
         dialog.btnShow.click()
         check(plugin.dataset == mod.api.DEFAULT_DATASET and sorted(plugin.grid.selected_tile_names())
@@ -1517,11 +1856,12 @@ def main():
         plugin.set_dataset(mod.api.Dataset('surfzone_dem_2019', '2019', '2'))
         app.processEvents()
         select('SU12NE')
-        plugin.show_survey_dates()
-        surveys = [lyr for lyr in QgsProject.instance().mapLayers().values() if lyr.name().startswith('Survey dates')]
-        types = [f['type'] for f in surveys[0].getFeatures()] if surveys else []
-        check(len(surveys) == 1 and types == ['Multibeam'] and 'coastal' in dock.lblDatasetInfo.text(),
-              "SurfZone: described, and its survey dates include the survey type")
+        dock.btnSurveyDates.click()
+        surveys = QgsProject.instance().mapLayersByName('SU12NE survey dates')
+        types = [f['SRVY_TYPE'] for f in surveys[0].getFeatures()] if surveys else []
+        check(len(surveys) == 1 and types == ['Multibeam'] and 'SRVY_TYPE' in surveys[0].mapTipTemplate()
+              and 'coastal' in dock.btnDatasetInfo.toolTip(),
+              "SurfZone: described, and its survey dates (a layer of its own) include the survey type")
         for survey_layer in surveys:
             QgsProject.instance().removeMapLayer(survey_layer.id())
         surveys = None
@@ -1573,10 +1913,10 @@ def main():
         check(plugin.dataset == mod.api.Dataset(*wales_dtm) and 'The tiles are in Wales' in dock.lblAvailability.text(),
               "the England dataset covers none of the tiles: switched to Wales' equivalent, and says so")
         welsh_files = len(plugin.target_for('SH28SW')[3].files)
-        check(f"1 to download, about {mod.format_size(welsh_files * 1.45)}" in dock.lblTileCount.text(),
+        check(dock.btnDownloadTiles.text() == f"Download 1 tile (~{mod.format_size(welsh_files * 1.45)})",
               f"the size estimate counts the tile's Welsh files ({welsh_files} of about 1.45 MB)")
         choose(wales_dtm)
-        check('2020-22 survey of all of Wales' in dock.lblDatasetInfo.text(), "the Welsh survey is described")
+        check('2020-22 survey of all of Wales' in dock.btnDatasetInfo.toolTip(), "the Welsh survey is described")
         server.file_requests.clear()
         msgs.clear()
         plugin.download_selected_tiles()
@@ -1587,6 +1927,8 @@ def main():
               "its ten 1 km GeoTIFFs saved in the tile's folder")
         server.file_requests.clear()
         select('SH28SW')  # a finished download clears the selection
+        check(dock.btnDownloadTiles.isEnabled() and dock.btnDownloadTiles.text() == 'Download 1 tile again...',
+              "a tile already downloaded: the button offers to download it again (and asks first)")
         answers.append(0)  # Skip existing
         asked.clear()
         msgs.clear()
@@ -1598,14 +1940,25 @@ def main():
         plugin.load_selected_tiles()
         wales_group = root.findGroup(mod.api.dataset_label(mod.api.Dataset(*wales_dtm)))
         wales_layers = [n.layer() for n in wales_group.findLayers()] if wales_group else []
-        check(len(wales_layers) == 1 and wales_layers[0].isValid()
-              and 'Welsh Government' in wales_layers[0].metadata().rights()[0],
-              "Welsh tiles load, credited to the Welsh Government / NRW")
-        wales_layers = None
+        joined = wales_layers[0] if len(wales_layers) == 1 else None
+        with open(joined.source() if joined else os.devnull, encoding='utf-8') as fh:
+            vrt_text = fh.read()
+        check(joined is not None and joined.isValid() and joined.name() == 'SH28SW'
+              and joined.source().endswith('.vrt') and joined.extent() == QgsRectangle(220000, 380000, 225000, 385000)
+              and all(os.path.basename(f) in vrt_text for f in wales_files)
+              and 'Welsh Government' in joined.metadata().rights()[0],
+              "a Welsh tile's ten 1 km files load as one layer of the 5 km tile, named after it: a VRT reading them, "
+              "credited to the Welsh Government / NRW")
+        check(sorted(os.path.normcase(f) for f in storage.find_raster_files(wales_dir, 'SH28SW'))
+              == sorted(os.path.normcase(f) for f in wales_files), "... the downloaded files kept as they are")
+        check(joined is not None and joined.renderer().type() == 'singlebandpseudocolor',
+              "... coloured by height")
+        wales_layers = joined = None
         root.removeChildNode(wales_group)
         wales_group = None
 
-        # Welsh archive surveys: NRW's grids are in millimetres (named ..._mm_units.asc): converted to metres
+        # Welsh archive surveys: NRW published them in millimetres (..._mm_units.asc). Downloaded as they are, and
+        # converted to metres only if the user agrees when loading them
         from osgeo import gdal as _gdal
         archive_zip = 'https://lle.blob.core.windows.net/lidar/2m_res_ST16_1998_dtm.zip'
         mm_grid = ('ncols 2\nnrows 2\nxllcorner 316000\nyllcorner 168000\ncellsize 2\nNODATA_value -9999\n'
@@ -1619,14 +1972,55 @@ def main():
             archive_zip, '2m_res_ST16_1998_dtm.zip', 'ST16'),)})
         archive.run()
         grids = storage.find_raster_files(archive_dir, 'ST16NE')
+        check(archive.results['ST16NE'] is None and [os.path.basename(g) for g in grids]
+              == ['dtm_F0000878_19980328_19980328_mm_units.asc'],
+              "Welsh archive grids download as published, in millimetres (not converted)")
+        archive_dataset = mod.api.Dataset('wales_lidar_archive_dtm', '1998', '2')
+
+        def archive_layer():
+            """The ST16NE layer and the text of the VRT it reads (the tile's part of the 10 km square's file)."""
+            found = QgsProject.instance().mapLayersByName('ST16NE')
+            if len(found) != 1 or not found[0].source().endswith('.vrt'):
+                return None, ''
+            with open(found[0].source(), encoding='utf-8') as fh:
+                return found[0], fh.read()
+        plugin.set_dataset(archive_dataset)
+        select('ST16NE')
+        app.processEvents()
+        answers.append(1)  # Keep millimetres
+        asked.clear()
+        plugin.load_selected_tiles()
+        mm_layer, vrt_text = archive_layer()
+        check(asked and asked[-1][0][1] == 'Heights in Millimetres' and mm_layer is not None
+              and os.path.basename(grids[0]) in vrt_text
+              and mm_layer.extent() == QgsRectangle(315000, 165000, 320000, 170000),
+              "loading them asks whether to convert them to metres: 'Keep millimetres' loads them as published (the "
+              "tile's part of the 10 km square's grid)")
+        mm_layer = None
+        select('ST16NE')
+        asked.clear()
+        plugin.load_selected_tiles()
+        check(not asked, "... and doesn't ask again about that survey this session")
+        plugin.units_checked.clear()  # (as in a new session)
+        select('ST16NE')
+        answers.append(0)  # Convert to metres
+        plugin.load_selected_tiles()
+        grids = storage.find_raster_files(archive_dir, 'ST16NE')
         grid_ds = _gdal.Open(grids[0]) if len(grids) == 1 else None
         values = grid_ds.GetRasterBand(1).ReadAsArray().tolist() if grid_ds else []
         grid_ds = None
-        check(archive.results['ST16NE'] is None and [os.path.basename(g) for g in grids]
-              == ['dtm_F0000878_19980328_19980328.tif'] and values == [[12.345000267028809, -9999.0],
-                                                                       [-4.849999904632568, 47.04399871826172]],
-              "Welsh archive grids in millimetres are converted to metres (no data kept, no millimetre copy left)")
-        archive = grids = values = None
+        metres_layer, vrt_text = archive_layer()
+        check([os.path.basename(g) for g in grids] == ['dtm_F0000878_19980328_19980328.tif']
+              and values == [[12.345000267028809, -9999.0], [-4.849999904632568, 47.04399871826172]]
+              and metres_layer is not None and os.path.basename(grids[0]) in vrt_text and '_mm_units' not in vrt_text,
+              "'Convert to metres' rewrites them in metres (no data kept; the millimetre file, and its layer, gone) "
+              "and loads them")
+        archive = grids = values = metres_layer = None
+        if root.findGroup(mod.api.dataset_label(archive_dataset)):
+            root.removeChildNode(root.findGroup(mod.api.dataset_label(archive_dataset)))
+        plugin.grid.clear_selection()
+        plugin.set_dataset(mod.api.DEFAULT_DATASET)
+        app.processEvents()
 
         # Mosaics of mixed surveys: the newest drawn on top, at the finest cell size (not an average)
         def grid_file(path, x0, size, cell, value):
@@ -1719,8 +2113,16 @@ def main():
         plugin.load_selected_tiles()
         scot_group = root.findGroup(mod.api.dataset_label(mod.api.Dataset(*phase1)))
         scot_layers = [n.layer() for n in scot_group.findLayers()] if scot_group else []
-        check(len(scot_layers) == 1 and 'attribution' in scot_layers[0].metadata().rights()[0].lower(),
-              "the shared file loads once, with the survey's own licence statement")
+        check([lyr.name() for lyr in scot_layers] == ['NS79NE', 'NS79SE']
+              and [lyr.extent() for lyr in scot_layers]
+              == [QgsRectangle(275000, 695000, 280000, 700000), QgsRectangle(275000, 690000, 280000, 695000)]
+              and 'attribution' in scot_layers[0].metadata().rights()[0].lower(),
+              "each tile of the shared 10 km file loads as its own 5 km layer, with the survey's own licence statement")
+        select('NS79NE', 'NS79SE')
+        msgs.clear()
+        plugin.load_selected_tiles()
+        check(len(scot_group.findLayers()) == 2 and "2 already in the project" in msgs[-1][0],
+              "loading them again adds nothing")
         scot_layers = None
         root.removeChildNode(scot_group)
         scot_group = None
@@ -1737,6 +2139,50 @@ def main():
         check(plugin.task is None and asked and asked[-1][0][1] == 'Licence Terms',
               "a non-commercial survey asks before downloading (Cancel stops)")
         plugin.set_dataset(mod.api.DEFAULT_DATASET)
+        app.processEvents()
+
+        # Between nations with tiles the services have already been asked about (selected earlier, or checked by
+        # the coverage shading): the dataset must still follow, with no new search to wait for
+        searches = server.searches
+        select('SH28SW')
+        app.processEvents()
+        check(plugin.dataset == mod.api.Dataset(*wales_dtm) and 'The tiles are in Wales' in dock.lblAvailability.text()
+              and dock.btnDataset.fullText().startswith('Wales DTM') and server.searches == searches,
+              "back to a Welsh tile selected earlier: switched to Wales' dataset, with no new search")
+        select('NS79NE')
+        app.processEvents()
+        check(plugin.dataset.product == 'scotland_lidar_dtm' and dock.btnDataset.fullText().startswith('Scotland DTM'),
+              "... then to a Scottish tile selected earlier: Scotland's")
+        select('SH28SW')
+        app.processEvents()
+        check(plugin.dataset == mod.api.Dataset(*wales_dtm) and dock.btnDataset.fullText().startswith('Wales DTM')
+              and server.searches == searches, "... and back to the Welsh tile: Wales' again")
+        plugin.set_dataset(mod.api.DEFAULT_DATASET)  # chosen by hand, with the Welsh tile still selected
+        plugin.schedule_search()
+        app.processEvents()
+        check(plugin.dataset == mod.api.DEFAULT_DATASET and '(0/1 tiles)' in dock.btnDataset.fullText(),
+              "a dataset chosen by hand afterwards stays chosen (one switch for each change of selection)")
+        plugin.grid.clear_selection()
+        view = QgsRectangle(canvas.extent())
+        unchecked = 'NS79SW' not in plugin.searched_tiles
+        canvas.setExtent(QgsRectangle(271000, 691000, 274000, 694000))  # inside NS79SW, not selected so far
+        dock.chkCoverage.setChecked(True)
+        wait_for_coverage(plugin)
+        check(unchecked and 'NS79SW' in plugin.searched_tiles and plugin.dataset == mod.api.DEFAULT_DATASET,
+              "the coverage shading checks a Scottish tile in view (nothing selected: the dataset stays)")
+        searches = server.searches
+        select('NS79SW')
+        app.processEvents()
+        check(plugin.dataset.product == 'scotland_lidar_dtm' and server.searches == searches
+              and 'The tiles are in Scotland' in dock.lblAvailability.text(),
+              "selecting a tile the coverage shading had already checked: switched to Scotland's dataset")
+        dock.chkCoverage.setChecked(False)
+        canvas.setExtent(view)
+        plugin.select_dataset_tiles(mod.api.DEFAULT_DATASET, ['SH28SW'])  # as "Show on grid" and Resume do
+        app.processEvents()
+        check(plugin.dataset == mod.api.DEFAULT_DATASET and plugin.grid.selected_tile_names() == ['SH28SW'],
+              "Show on grid / Resume keep the dataset they were asked for, whatever its tiles offer")
+        plugin.grid.clear_selection()
         app.processEvents()
 
         # Northern Ireland: Go to places it, and says where its data is
@@ -1791,7 +2237,10 @@ def main():
               and plugin.unfinished()[1] == ['SU12SE'], "a cancelled download is offered to resume")
         server.responses = {'SU1520': [(200, tile_zip_bytes('SU12SE'))]}
         layer.removeSelection()
+        plugin.searched_tiles.discard('SU12SE')  # as after restarting QGIS: Resume checks the tile first
         dock.btnResume.click()
+        check(plugin.resume_pending and dock.lblStatus.text() == "Checking the unfinished tiles, then resuming...",
+              "Resume checks tiles not checked yet this session before downloading them")
         wait_for_search(plugin)
         wait_for_task(plugin)
         check(storage.find_raster_files(DTM, 'SU12SE') and not dock.btnResume.isVisible()
@@ -1833,8 +2282,12 @@ def main():
         def grid_layers():
             return [lyr for lyr in QgsProject.instance().mapLayers().values() if lyr.name() == 'OSGB Grid']
 
+        dock.btnPickTiles.click()
+        check(canvas.mapTool() is plugin.pick_tool, "(picking tiles)")
         dock.chkShowGrid.setChecked(False)
         check(not grid_layers() and plugin.grid.layer() is None, "unticking 'Show OSGB grid' removes the grid")
+        check(canvas.mapTool() is not plugin.pick_tool and not dock.btnPickTiles.isChecked(),
+              "... and puts the pick tool away (nothing to pick without the grid)")
         saved_grid = pkg_grid.open_grid(os.path.dirname(mod.__file__))  # as if read from a saved project
         QgsProject.instance().addMapLayer(saved_grid)
         saved_grid = None
@@ -1866,8 +2319,10 @@ def main():
         layer = plugin.grid.layer()
 
         # --- the user removes the grid layer themselves
+        dock.btnPickTiles.click()
         QgsProject.instance().removeMapLayer(layer.id())
         check(not dock.chkShowGrid.isChecked() and plugin.grid.layer() is None, "manual removal syncs checkbox")
+        check(canvas.mapTool() is not plugin.pick_tool, "... and puts the pick tool away")
         msgs.clear()
         plugin.download_selected_tiles()
         check(msgs and msgs[-1][1] == Qgis.MessageLevel.Warning,

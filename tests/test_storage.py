@@ -169,6 +169,9 @@ def test_download_summary_and_delete(tmp_path):
     assert [(api.dataset_label(d), sorted(tiles), size) for d, _, tiles, size in rows] == [
         ('England Composite DTM, 2022, 1 m', ['SU12NE', 'SU12NW'], 1510),
         ('England DTM (individual surveys), 2010, 1 m', ['SU12NE'], 200)]
+    # The quick listing (for the panel's "Shaded for" menu): the same surveys and tiles, without the sizes
+    assert storage.downloaded_datasets(root) == [row[:3] for row in rows]
+    assert storage.downloaded_datasets(os.path.join(root, 'missing')) == []
     assert storage.free_space(os.path.join(root, 'not', 'made', 'yet')) > 0
 
     # Only survey folders inside the download folder can be deleted

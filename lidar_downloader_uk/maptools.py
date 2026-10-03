@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2025-2026 Simon Stoate
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Map tools: pick tiles on the map, and draw an area of interest."""
+"""The map tool for picking tiles on the map."""
 
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtGui import QColor
@@ -49,15 +49,30 @@ class _BandTool(QgsMapTool):
 
 
 class TileSelectTool(_BandTool):
-    """Click a tile to add it to / remove it from the selection; drag a box to add every tile under it."""
+    """Click a tile to select it, or drag a box to select every tile under it, the way QGIS's own Select Features
+    tool works: on their own they replace the selection; with Shift or Ctrl held they change it (selection_mode)."""
 
-    # (geometry in the canvas CRS, is_click): a click toggles one tile, a drag adds tiles
-    picked = pyqtSignal(object, bool)
+    # (geometry in the canvas CRS, is_click, mode): mode is how the tiles under it change the selection
+    picked = pyqtSignal(object, bool, str)
 
     def __init__(self, canvas):
         super().__init__(canvas, QColor(31, 120, 180))
         self.start = None
         self.dragging = False
+
+    @staticmethod
+    def selection_mode(modifiers, is_click):
+        """How a click or a dragged box changes the selection, as QGIS's Select Features tool does it
+        (QgsMapToolSelectUtils): 'replace' with no key held. A click with Shift or Ctrl is 'toggle': it adds the
+        tile, or removes it if it's selected. A box is 'add' with Shift, 'remove' with Ctrl, and with both
+        'intersect' (keeps the selected tiles under it)."""
+        shift = bool(modifiers & Qt.KeyboardModifier.ShiftModifier)
+        ctrl = bool(modifiers & Qt.KeyboardModifier.ControlModifier)
+        if is_click:
+            return 'toggle' if shift or ctrl else 'replace'
+        if shift and ctrl:
+            return 'intersect'
+        return 'add' if shift else 'remove' if ctrl else 'replace'
 
     def canvasPressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -83,77 +98,4 @@ class TileSelectTool(_BandTool):
         self.start = None
         self.dragging = False
         self.clear()
-        self.picked.emit(geometry, is_click)
-
-
-class DrawAreaTool(_BandTool):
-    """Drag a rectangle, or click points for a polygon (right-click or double-click to finish, Esc to cancel)."""
-
-    drawn = pyqtSignal(object)  # QgsGeometry in the canvas CRS
-
-    def __init__(self, canvas):
-        super().__init__(canvas, QColor(227, 26, 28))
-        self.points = []
-        self.start = None
-        self.dragging = False
-
-    def reset(self):
-        self.points = []
-        self.start = None
-        self.dragging = False
-        self.clear()
-
-    def _show_polygon(self, extra=None):
-        points = self.points + ([extra] if extra is not None else [])
-        if len(points) >= 2:
-            self.show(QgsGeometry.fromPolygonXY([points]))
-
-    def _finish_polygon(self):
-        points = self.points
-        self.reset()
-        if len(points) >= 3:
-            self.drawn.emit(QgsGeometry.fromPolygonXY([points]))
-
-    def canvasPressEvent(self, event):
-        if event.button() == Qt.MouseButton.RightButton:
-            self._finish_polygon()
-        elif event.button() == Qt.MouseButton.LeftButton:
-            self.start = event.pos()
-            self.dragging = False
-
-    def canvasMoveEvent(self, event):
-        point = QgsPointXY(self.toMapCoordinates(event.pos()))
-        if self.start is not None and not self.points and \
-                (event.pos() - self.start).manhattanLength() > DRAG_PIXELS:
-            self.dragging = True
-            self.show(QgsGeometry.fromRect(QgsRectangle(QgsPointXY(self.toMapCoordinates(self.start)), point)))
-        elif self.points:
-            self._show_polygon(point)
-
-    def canvasReleaseEvent(self, event):
-        if event.button() != Qt.MouseButton.LeftButton or self.start is None:
-            return
-        if self.dragging:
-            rect = QgsRectangle(self.toMapCoordinates(self.start), self.toMapCoordinates(event.pos()))
-            self.reset()
-            self.drawn.emit(QgsGeometry.fromRect(rect))
-            return
-        self.start = None
-        point = QgsPointXY(self.toMapCoordinates(event.pos()))
-        # A double-click also sends a second press/release at the same point: don't add it twice
-        if not self.points or self.points[-1] != point:
-            self.points.append(point)
-        self._show_polygon()
-
-    def canvasDoubleClickEvent(self, event):
-        self._finish_polygon()
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key.Key_Escape:
-            self.reset()
-
-    def deactivate(self):
-        self.points = []
-        self.start = None
-        self.dragging = False
-        super().deactivate()
+        self.picked.emit(geometry, is_click, self.selection_mode(event.modifiers(), is_click))

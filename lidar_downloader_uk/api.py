@@ -202,6 +202,21 @@ ELEVATION_PRODUCTS = {
     'wales_lidar_archive_dsm', 'scotland_lidar_dtm', 'scotland_lidar_dsm',
 }
 LICENCE = 'Open Government Licence v3.0: https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/'
+# Products whose tiles come with a survey file: the surveys merged into each tile, with when they were flown
+SURVEY_DATE_PRODUCTS = {'lidar_composite_dtm', 'lidar_composite_first_return_dsm', 'lidar_composite_last_return_dsm',
+                        'surfzone_dem_2019'}
+
+
+def has_survey_dates(product):
+    return product in SURVEY_DATE_PRODUCTS
+
+
+# Photos whose black is part of the picture (taken at night), not the empty area outside the flight
+BLACK_IS_DATA_PRODUCTS = {'vertical_aerial_photography_tiles_night_time'}
+
+
+def black_is_data(product):
+    return product in BLACK_IS_DATA_PRODUCTS
 
 
 def is_non_commercial(rights):
@@ -449,6 +464,14 @@ def dataset_label(dataset, within_nation=False):
         year = NEWEST if dataset.is_latest else dataset.year
         return f"{product}, {year}, finest resolution"
     return _join(product, year_label(dataset), resolution_text(dataset.resolution))
+
+
+def mosaic_name(dataset, tiles, cropped=False):
+    """A file name (no extension) for a mosaic: the dataset, then its tiles (a short reference such as
+    places.tiles_ref makes), e.g. England_Composite_DTM_2022_1m_SU12NE_SU12NW; ending _cropped when cut to an area."""
+    label = dataset_label(dataset).replace(NEWEST, 'newest').replace('finest resolution', 'finest')
+    words = re.findall(r'[A-Za-z0-9.\-]+', re.sub(r'(\d) m\b', r'\1m', label))
+    return '_'.join(words + ([tiles] if tiles else []) + (['cropped'] if cropped else []))
 
 
 def menu_label(product):

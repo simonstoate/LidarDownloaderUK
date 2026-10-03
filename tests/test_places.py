@@ -107,3 +107,32 @@ def test_ni_place_names():
     assert places.match_ni_places("helens bay") and places.match_ni_places('Bally')
     assert places.match_ni_places('Bally', exact_only=True) == []
     assert places.match_ni_places('') == []
+
+
+def test_tile_at():
+    assert places.tile_at(417500, 127500) == 'SU12NE'
+    for tile in ('SU12NE', 'SU12SW', 'TQ38SW', 'NT27NE', 'HP61SW', 'SV00SW', 'SH28SW', 'NS79SE', 'TG14NW', 'ST16NE'):
+        x0, y0, _, _ = places.parse_grid_reference(tile).extent
+        assert places.tile_at(x0, y0) == tile and places.tile_at(x0 + 4999.9, y0 + 4999.9) == tile
+    assert places.tile_at(-1, 5) is None and places.tile_at(700000, 0) is None
+
+
+def test_fills_rectangle():
+    assert places.fills_rectangle(['SU12NE', 'SU12NW'])                       # 2 x 1
+    assert places.fills_rectangle(['SU12NW', 'SU12NE', 'SU22NW'])             # 3 x 1, across 10 km squares
+    assert places.fills_rectangle(['SU12NE', 'SU12NW', 'SU12SE', 'SU12SW'])   # a 10 km square
+    assert places.fills_rectangle(['SU12NE', 'SU12SE', 'SU22NW', 'SU22SW'])   # 2 x 2 across squares
+    assert places.fills_rectangle(['SU12SW', 'SU12SE', 'SU22SW', 'SU12NW', 'SU12NE', 'SU22NW'])  # 3 x 2
+    assert not places.fills_rectangle([]) and not places.fills_rectangle(['SU12NE'])
+    assert not places.fills_rectangle(['SU12NE', 'SU12NW', 'SU12SE'])         # an L: a gap in the corner
+    assert not places.fills_rectangle(['SU12NE', 'SU12SW'])                   # meeting only at a corner
+    assert not places.fills_rectangle(['SU12NE', 'SU12NW', 'SU32NW', 'SU32NE'])  # two pairs, a gap between
+    assert not places.fills_rectangle(['SU12NE', 'SU12'])                     # not a tile name
+
+
+def test_tiles_ref():
+    assert places.tiles_ref(['SU12NE']) == 'SU12NE'
+    assert places.tiles_ref(['SU12NW', 'su12ne']) == 'SU12NE_SU12NW'
+    assert places.tiles_ref(['SU12NE', 'SU12NW', 'SU12SE', 'SU12SW']) == 'SU12'
+    assert places.tiles_ref(['SU12NE', 'SU12SE', 'SU22NW', 'SU22SW']) == 'SU12SE-SU22NW'
+    assert places.tiles_ref(['SU12SW', 'SU12SE', 'SU22SW', 'SU12NW', 'SU12NE', 'SU22NW']) == 'SU12SW-SU22NW'

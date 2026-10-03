@@ -2,6 +2,16 @@
 
 All notable changes to LIDAR Downloader UK, newest first. 0.14.3 is the first public release: the changelog in the plugin's `metadata.txt` (shown in QGIS's Plugin Manager and on plugins.qgis.org) starts there, and the versions before it are the plugin's development history.
 
+## 0.14.6
+
+Changes from the first live use, to make the plugin simpler and keep the data exactly as downloaded.
+
+- **Tiles load as downloaded:** each 5 km tile loads as one layer named after it, read straight from the downloaded files. Only "Create mosaic" and "Crop to" join tiles, and point clouds are always loaded as they are.
+- **A simpler, shorter panel:** QGIS's own select and deselect icons, a data menu that waits for a tile (each dataset described in its tooltip), a Download button that says what it will fetch, sections that fold up, and the grid deselected once something loads.
+- **More choice when downloading:** load each tile, load a temporary mosaic, or just download; "Create mosaic" makes a temporary mosaic or a saved file named after the data and the tiles.
+- **Crop to your site:** tick "Crop to" beside a polygon layer and only the tiles it needs are downloaded, then loaded as one cropped layer.
+- **Fixes:** the data menu follows the nation, Northern Ireland's links work again, night aerial photos show properly, Welsh archive heights are converted only if you agree, and a download no longer occasionally stays busy until cancelled.
+
 ## 0.14.5
 
 Metadata follows plugins.qgis.org's rules for QGIS 4: the `supportsQt6` flag is gone, as QGIS now takes QGIS 4 support from `qgisMaximumVersion` (4.99) alone and the site warns about the flag on upload. Nothing else changes. QGIS 3 (Qt5) and QGIS 4 never read the flag; the only builds that still do are the Qt6 previews of QGIS 3.40 and 3.44 (such as OSGeo4W's `qgis-ltr-qt6` and `qgis-qt6` packages), which now treat the plugin as incompatible unless `QGIS_DISABLE_SUPPORTS_QT6_CHECK` is set.

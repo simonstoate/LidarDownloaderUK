@@ -40,9 +40,10 @@ def open_grid(plugin_dir, name=LAYER_NAME):
     return QgsVectorLayer(f'{path}|layername=osgb_grid_5km', name, 'ogr')
 
 
-def intersecting_features(layer, geometries, crs, data_only=True, transform_context=None):
+def intersecting_features(layer, geometries, crs, data_only=True, transform_context=None, touching=True):
     """Grid features intersecting any of the geometries (given in crs); with data_only, only squares with data
-    from one of the sources (HAS_DATA)."""
+    from one of the sources (HAS_DATA); touching=False leaves out squares that only touch them (along an edge,
+    as with a site boundary drawn along a tile's edge)."""
     context = transform_context or QgsProject.instance().transformContext()
     transform = QgsCoordinateTransform(crs, layer.crs(), context)
     found = {}
@@ -59,7 +60,8 @@ def intersecting_features(layer, geometries, crs, data_only=True, transform_cont
                 continue
             if data_only and feature[HAS_DATA_FIELD] != 't':
                 continue
-            if engine.intersects(feature.geometry().constGet()):
+            square = feature.geometry().constGet()
+            if engine.intersects(square) and (touching or not engine.touches(square)):
                 found[feature.id()] = feature
     return list(found.values())
 
@@ -334,22 +336,28 @@ class GridLayer(QObject):
             return []
         return [(f[TILE_NAME_FIELD], f[HAS_DATA_FIELD] == 't') for f in layer.selectedFeatures()]
 
-    def select_intersecting(self, geometries, crs, data_only=True, mode='replace'):
+    def select_intersecting(self, geometries, crs, data_only=True, mode='replace', touching=True):
         """Select the tiles intersecting any of the geometries (given in crs).
 
-        mode 'replace' replaces the current selection, 'add' adds to it and 'toggle'
-        adds the tiles that aren't selected and removes those that are. Returns the
-        number of tiles found, or None if the grid isn't loaded.
+        mode 'replace' replaces the current selection, 'add' adds to it, 'remove' takes
+        the tiles out of it, 'intersect' keeps only the selected tiles among them, and
+        'toggle' adds the tiles that aren't selected and removes those that are. Returns
+        the number of tiles found, or None if the grid isn't loaded. touching=False leaves out tiles that only
+        touch the geometries along an edge.
         """
         layer = self.layer()
         if layer is None:
             return None
-        ids = [f.id() for f in intersecting_features(layer, geometries, crs, data_only)]
+        ids = [f.id() for f in intersecting_features(layer, geometries, crs, data_only, touching=touching)]
+        selected = set(layer.selectedFeatureIds())
         if mode == 'toggle':
-            selected = set(layer.selectedFeatureIds())
             layer.selectByIds(list(selected.symmetric_difference(ids)))
         elif mode == 'add':
-            layer.selectByIds(list(set(layer.selectedFeatureIds()) | set(ids)))
+            layer.selectByIds(list(selected | set(ids)))
+        elif mode == 'remove':
+            layer.selectByIds(list(selected - set(ids)))
+        elif mode == 'intersect':
+            layer.selectByIds(list(selected & set(ids)))
         else:
             layer.selectByIds(ids)
         return len(ids)

@@ -42,6 +42,19 @@ class DownloadsDialog(QtWidgets.QDialog):
         self.tree.itemSelectionChanged.connect(self._update_buttons)
         self.tree.itemDoubleClicked.connect(lambda item, column: self._request(self.showRequested))
         layout.addWidget(self.tree, 1)
+        # The zip files: deleted after extracting (a setting the plugin keeps), or tidied up now
+        zips = QtWidgets.QHBoxLayout()
+        self.chkDeleteZips = QtWidgets.QCheckBox('Delete zips after extracting', self)
+        self.chkDeleteZips.setToolTip('Permanently deletes each zip once its tile has extracted successfully. Saves '
+                                      'disk space: each zip is about the same size as its extracted tile. Tiles whose '
+                                      'zip was deleted still count as downloaded.')
+        self.btnTidyZips = QtWidgets.QPushButton('Delete extracted zips...', self)
+        self.btnTidyZips.setToolTip('Lists the zip files in the download folder whose tiles are fully extracted, and '
+                                    'asks before permanently deleting them')
+        zips.addWidget(self.chkDeleteZips)
+        zips.addStretch(1)
+        zips.addWidget(self.btnTidyZips)
+        layout.addLayout(zips)
         buttons = QtWidgets.QHBoxLayout()
         self.btnShow = QtWidgets.QPushButton('Show on grid', self)
         self.btnShow.setToolTip('Choose this dataset and select its tiles on the grid')
