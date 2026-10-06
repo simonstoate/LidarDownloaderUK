@@ -2,6 +2,9 @@
 
 # LIDAR Downloader UK (QGIS plugin)
 
+> [!NOTE]
+> **This is an independent plugin, not an official one.** It isn't made by, affiliated with or endorsed by the Environment Agency, Defra, the Welsh Government, Natural Resources Wales, the Scottish Government, Ordnance Survey, OSNI or any other organisation whose data it uses. It downloads their open data from their own official services.
+
 Download LIDAR data for **England, Wales and Scotland** straight into QGIS:
 
 - **England** (Environment Agency): DTMs, DSMs, vegetation height, intensity and point clouds, from the 2022 Composite products and the National LIDAR Programme back to single surveys from 1998, plus river bathymetry, the coastal SurfZone DEM and, where flown, aerial photography.
@@ -245,6 +248,8 @@ Compatibility rules for supporting both Qt5 and Qt6:
 - Code in `tasks.py` `run()` runs on a worker thread: no widgets or project access there.
 
 ## Data sources and licences
+
+LIDAR Downloader UK is an independent plugin. It isn't affiliated with or endorsed by the Environment Agency, the Welsh Government, Natural Resources Wales, the Scottish Government, Ordnance Survey, Ordnance Survey of Northern Ireland or any other organisation whose data or services it uses.
 
 - **England** (LIDAR, river bathymetry, SurfZone DEM, aerial photography) is downloaded from the Environment Agency's [Survey Data Download](https://environment.data.gov.uk/survey) service: © Environment Agency copyright and/or database right, under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
 - **Wales** is downloaded from [DataMapWales](https://datamap.gov.wales/) (Welsh Government's 2020-22 national survey; Natural Resources Wales' archive), under the Open Government Licence v3.0. Welsh Government notes the data wasn't created specifically for flood modelling.
