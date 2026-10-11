@@ -240,6 +240,26 @@ A review of the code as an open-source project, and of what plugins.qgis.org che
   what happens after a download; "Crop to" downloads only the tiles the crop needs; fixes (the data menu follows
   the nation, Northern Ireland's links, night aerial photos, downloads that stayed busy)
 
+## v0.15: easier to use (in progress)
+
+From the review of 1 October 2026 and first live use.
+
+- [x] Go to selects the place's tiles in place of the selection
+- [x] The grid fades when zoomed out (beyond 1:1,000,000)
+- [x] All of the Welsh archive: 500 m tiles (the 25 cm surveys of 2006-2011), and 2 km tiles across a 5 km line;
+  download sizes estimated from real files; converting to metres keeps overviews
+- [x] Survey dates for Wales (DataMapWales' tile catalogues say when each tile was flown)
+- [x] A one-time tip for new users, and a Feedback link at the foot of the panel
+- [x] "Delete zips after extracting" on for new users (existing settings kept)
+- [x] Real plurals in messages
+- [x] Scotland (reported, Oct 2026): "newest for each tile" picks the survey that covers the tile; partial surveys
+  say so in the menu; Phase 1 / 2 10 km files offered only where they reach; the grid's data flags refreshed and
+  updated by searches; new survey names tidied
+- [x] Point cloud tiles of several files show their points: COPC copies and a VPC over them, with an overview,
+  in the survey's vpc folder (reported by a user, Oct 2026: only the files' outlines showed)
+- [ ] Best available DTM / DSM / point cloud: three choices at the top of the data menu, one download across England, Wales and Scotland
+- [ ] Terrain shading on by default (how to be decided: QGIS's map shading, or a hillshade per tile)
+
 ## Companion plugin (planned)
 
 Styling, terrain and contour exports (DXF for CAD), river-bed burn-in, differences between surveys, surfaces from
@@ -248,12 +268,9 @@ point clouds, and catchment / sub-catchment generation, working on any elevation
 
 ## Later
 
-- [ ] Best available DTM / DSM: one choice that gives each tile the best elevation data from any product or
-  survey (deferred from v0.14)
 - [ ] Split the main module (lidar_downloader.py, about 2,200 lines) by panel step, e.g. the downloads and the
   loading / mosaic code in modules of their own
 - [ ] Northern Ireland downloads, if OpenDataNI's LiDAR becomes tiled / easier to reach (list the datasets in view first)
-- [ ] Survey dates for Wales (the WFS has flown dates per 1 km square)
 - [x] *(0.9.1)* Riverine multibeam bathymetry, burnt into DTM exports on request
 - [x] *(0.9.2)* SurfZone DEM 2019 (coastal: land and sea bed)
 - [ ] Other products the search API lists: CASI multispectral imagery

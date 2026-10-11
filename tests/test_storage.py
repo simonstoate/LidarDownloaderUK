@@ -146,6 +146,15 @@ def test_imagery_and_photo_files(tmp_path):
     assert len(storage.find_data_files(d, 'SU12NE')) == 2
 
 
+def test_point_cloud_files_leave_out_qgis_index_copies(tmp_path):
+    d = str(tmp_path)
+    for name in ('SU1525_P_1.laz', 'SU1525_P_1.copc.laz', 'SU1526_P_2.las', 'SU1526_P_2.copc.laz', 'SU1527.copc.laz'):
+        touch(os.path.join(d, 'SU12NE', name))
+    # QGIS's COPC copy beside a file it indexed isn't a download; a file published as COPC is
+    assert sorted(os.path.basename(f) for f in storage.find_point_cloud_files(d, 'SU12NE')) == [
+        'SU1525_P_1.laz', 'SU1526_P_2.las', 'SU1527.copc.laz']
+
+
 def test_metadata_files(tmp_path):
     d = str(tmp_path)
     touch(os.path.join(d, 'SU12NE', 'SU12ne_DTM_1m_Metadata.gpkg'))

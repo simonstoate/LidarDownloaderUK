@@ -518,7 +518,8 @@ class SearchTask(QgsTask):
                 collections = self._scottish_collections()  # None if the catalogue didn't answer
                 data = collections and self._pages('result', sources.SCOTLAND_PAGE, lambda start: self._request(
                     'Scottish Remote Sensing Portal', sources.SCOTLAND_SEARCH_URL,
-                    sources.scotland_search_body(collections, area['polygon'], offset=start), 'application/json',
+                    sources.scotland_search_body(collections, area.get('squares') or area['polygon'], offset=start),
+                    'application/json',
                     service='scotland'))
                 answers.append(collections is not None and data is not None
                                and sources.parse_scotland_products(data or {}, collections))

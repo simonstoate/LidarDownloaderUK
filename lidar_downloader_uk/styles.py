@@ -88,7 +88,8 @@ def survey_signature(layer):
 
 
 def style_survey_dates(layer, span=None):
-    """A tile's survey file as it came (its surveys, with SRVY_YEAR, SD_FLOWN / ED_FLOWN, FILENAME...): coloured by the
+    """A tile's survey file as it came (its surveys, with SRVY_YEAR, SD_FLOWN / ED_FLOWN, FILENAME...; for Wales, the
+    one made from its tile catalogue, with the date as text in FLOWN): coloured by the
     year flown over span (first, last year: those of every tile's survey dates shown, so a year has one colour in all
     of them; by default its own), the oldest red and the newest blue, and labelled with the year; the map tip shows
     the survey and its flown dates (and, for the SurfZone DEM, the kind of survey). Where surveys overlap the newest
@@ -127,6 +128,8 @@ def style_survey_dates(layer, span=None):
     if 'SD_FLOWN' in names and 'ED_FLOWN' in names:
         tip += ('<br>Flown [% format_date("SD_FLOWN", \'d MMM yyyy\') %]'
                 '[% CASE WHEN "ED_FLOWN" <> "SD_FLOWN" THEN \' to \' || format_date("ED_FLOWN", \'d MMM yyyy\') END %]')
+    elif 'FLOWN' in names:  # (Wales: the date as its catalogue gives it)
+        tip += '<br>Flown [% "FLOWN" %]'
     tip += '<br>'
     tip += ('[% CASE WHEN "SRVY_TYPE" IS NOT NULL THEN "SRVY_TYPE" || \' survey \' ELSE \'Survey \' END %]'
             if 'SRVY_TYPE' in names else 'Survey ')

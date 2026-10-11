@@ -15,9 +15,12 @@ again, this is the file to change.
     GET  {BASE_URL}/{product}/{year}/{resolution}/{tile id}   -> zip
 """
 
+import math
 import os
 import re
 from dataclasses import dataclass
+
+from . import places
 
 BASE_URL = 'https://environment.data.gov.uk/tiles/collections/survey'
 # Download links from the search services are only followed if they point to one of these
@@ -99,10 +102,11 @@ PRODUCTS = {
     'oblique_aerial_photography_tiles_incident_response': ('England oblique photos (incident response)', PHOTOS, 25),
     'oblique_aerial_photography_tiles_other_survey': ('England oblique photos (other surveys)', PHOTOS, 80),
 }
-# Typical size (MB) of one file, for sources that list files without sizes: a Welsh 2020-22 1 km GeoTIFF, and a
-# Welsh archive 10 km zip at 1 m (scaled by the resolution: 2 m is about a quarter)
-FILE_MB = {'wales_lidar_dtm': 1.45, 'wales_lidar_dsm': 1.5, 'wales_lidar_archive_dtm': 42,
-           'wales_lidar_archive_dsm': 42}
+# Typical size (MB) of one file, for sources that list files without sizes: a Welsh 2020-22 1 km GeoTIFF
+FILE_MB = {'wales_lidar_dtm': 1.45, 'wales_lidar_dsm': 1.5}
+# A Welsh archive zip (one survey's part of a 10 km square), by resolution: the mean of 40 of each measured on
+# DataMapWales (Oct 2026). Finer surveys cover less of their square, so their zips aren't much bigger
+WALES_ARCHIVE_MB = {'0.25': 85, '0.5': 55, '1': 30, '2': 25}
 NATION_NAMES = {'ea': 'England', 'wales': 'Wales', 'scotland': 'Scotland'}
 # Where each product comes from: 'ea' (England), 'wales' or 'scotland'
 SOURCE_PREFIXES = (('wales_', 'wales'), ('scotland_', 'scotland'))
@@ -202,9 +206,11 @@ ELEVATION_PRODUCTS = {
     'wales_lidar_archive_dsm', 'scotland_lidar_dtm', 'scotland_lidar_dsm',
 }
 LICENCE = 'Open Government Licence v3.0: https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/'
-# Products whose tiles come with a survey file: the surveys merged into each tile, with when they were flown
+# Products whose tiles have survey dates: England's come with a survey file (the surveys merged into each tile, with
+# when they were flown); Wales' tile catalogues say when each of their tiles was flown
 SURVEY_DATE_PRODUCTS = {'lidar_composite_dtm', 'lidar_composite_first_return_dsm', 'lidar_composite_last_return_dsm',
-                        'surfzone_dem_2019'}
+                        'surfzone_dem_2019', 'wales_lidar_dtm', 'wales_lidar_dsm', 'wales_lidar_archive_dtm',
+                        'wales_lidar_archive_dsm'}
 
 
 def has_survey_dates(product):
@@ -316,6 +322,21 @@ class FileRef:
 
 
 @dataclass(frozen=True)
+class SurveyArea:
+    """Where part of a survey is, and when it was flown: from Wales' tile catalogues (also for Survey dates), and
+    Scotland's files. The outline (xmin, ymin, xmax, ymax in British National Grid metres), the year, the date flown
+    as text to read ('22 Mar 2020', '1 to 5 Apr 2009'; '' if not known), the survey: its kind ('NRW archive',
+    'scotland') and name ('D0000877', 'phase-1'), and the share of the outline it has data in, where that's
+    estimated (a Phase 2 point cloud of a 5 km tile, from its size)."""
+    bounds: tuple
+    year: int
+    flown: str
+    kind: str
+    name: str
+    share: float = 1.0
+
+
+@dataclass(frozen=True)
 class Offering:
     """One downloadable tile of one dataset, as listed by a search service."""
     dataset: Dataset
@@ -325,6 +346,8 @@ class Offering:
     files: tuple = ()
     # Licence or attribution statement for this survey, where the source gives one
     rights: str = ''
+    # When its parts were flown (SurveyArea), where the source says so: Wales
+    surveys: tuple = ()
 
 
 def tile_to_grid(tile):
@@ -504,17 +527,28 @@ def year_number(year):
     return int(year[:4]) if year and year[:4].isdigit() else 0
 
 
+def _survey_parts(year):
+    """(years, words) of a dataset year with a name, '2016-hes-2016-2017' -> ([2016, 2017], ['hes']): the years in
+    it, and its other words, a repeat, and the year's last two digits at the end, left out ('2023-orkney-islands-
+    council-23' -> ['orkney', 'islands', 'council'])."""
+    tokens = year[5:].split('-')
+    years = [int(year[:4])] + [int(t) for t in tokens if len(t) == 4 and t.isdigit()]
+    words = [t for t in tokens if not (len(t) == 4 and t.isdigit())]
+    if words and words[-1] == year[2:4]:
+        words = words[:-1]
+    return years, [w for i, w in enumerate(words) if i == 0 or w != words[i - 1]]
+
+
 def survey_name(year):
     """'2011-phase-1' -> 'Phase 1', '2020-2022' -> '' (no name, just years)."""
     if not year or not YEAR_RE.match(year) or len(year) == 4:
         return ''
-    rest = year[5:]
-    if rest.isdigit():
+    if year[5:].isdigit():
         return ''
     words = {'hes': 'HES', 'lidar': 'LIDAR', 'dsm': 'DSM', 'dtm': 'DTM', 'outerheb': 'Outer Hebrides',
              '2010s10': 'Scottish Ten', '2017sp3': 'SP3'}
-    return ' '.join(words.get(w, w.capitalize())
-                    for w in rest.split('-'))
+    name = ' '.join(words.get(w, w.capitalize()) for w in _survey_parts(year)[1])
+    return {'Orkney Islands Council': 'Orkney'}.get(name, name)
 
 
 def product_source(product):
@@ -535,7 +569,11 @@ def year_label(dataset):
     if len(year) == 9 and year[4] == '-' and year[5:].isdigit():
         return f'{year[:4]}-{year[7:]}'  # 2020-2022 -> 2020-22
     name = survey_name(year)
-    return f'{year[:4]} ({name})' if name else year
+    if not name:
+        return year
+    years = _survey_parts(year)[0]  # a survey over two years: '2026-coastal-coastal-2025' -> '2025-26 (Coastal)'
+    first, last = min(years), max(years)
+    return f'{first}-{last % 100:02d} ({name})' if last == first + 1 else f'{year[:4]} ({name})'
 
 
 def _join(*parts):
@@ -676,10 +714,10 @@ def download_mb(offering, counted=None):
         if ref.size:
             total += ref.size / 1e6
         else:
-            typical = FILE_MB.get(offering.dataset.product, estimate_tile_mb(offering.dataset))
             if 'archive' in offering.dataset.product:
-                typical = typical / max(_resolution_value(offering.dataset.resolution), 0.25) ** 2
-            total += typical
+                total += WALES_ARCHIVE_MB.get(offering.dataset.resolution, max(WALES_ARCHIVE_MB.values()))
+            else:
+                total += FILE_MB.get(offering.dataset.product, estimate_tile_mb(offering.dataset))
     return total
 
 
@@ -723,16 +761,22 @@ def is_trusted_url(url):
     return isinstance(url, str) and url.startswith(TRUSTED_DOWNLOAD_PREFIXES) and '..' not in url
 
 
+def plural(count, word):
+    """E.g. '1 layer', '3 layers'."""
+    return f"{count:,} {word}{'' if count == 1 else 's'}"
+
+
 def square_tiles(ref):
-    """(folder square, [5 km tiles]) for a grid reference naming a 1, 5 or 10 km square:
-    'SH2281' -> ('SH28SW', ['SH28SW']), 'NN70SE' -> ('NN70SE', ['NN70SE']),
-    'ST16' -> ('ST16', ['ST16NE', 'ST16NW', 'ST16SE', 'ST16SW']). None if it isn't one."""
+    """(folder square, [5 km tiles]) for a grid reference naming a 500 m, 1, 5 or 10 km square:
+    'SH2281' -> ('SH28SW', ['SH28SW']), 'ST3281SW' (a quarter of ST3281) -> ('ST38SW', ['ST38SW']),
+    'NN70SE' -> ('NN70SE', ['NN70SE']), 'ST16' -> ('ST16', ['ST16NE', 'ST16NW', 'ST16SE', 'ST16SW']).
+    None if it isn't one."""
     ref = (ref or '').strip().upper().replace(' ', '')
     if TILE_RE.match(ref):
         return ref, [ref]
     if SQUARE_10KM_RE.match(ref):
         return ref, [ref + q for q in ('NE', 'NW', 'SE', 'SW')]
-    if re.match(r'^[A-HJ-Z]{2}\d{4}$', ref):
+    if re.match(r'^[A-HJ-Z]{2}\d{4}(NE|NW|SE|SW)?$', ref):  # a 1 km square's quarter is in the same 5 km tile
         tile = f"{ref[:2]}{ref[2]}{ref[4]}{'N' if int(ref[5]) >= 5 else 'S'}{'E' if int(ref[3]) >= 5 else 'W'}"
         return tile, [tile]
     return None
@@ -801,13 +845,70 @@ def summarise(offerings, tiles):
     return coverage
 
 
+# Coverage is measured in cells of 500 m (a quarter of a square kilometre). A survey covering less than this share
+# of what the most complete one covers is "part of the tile"
+CELL = 500
+COMPLETE_SHARE = 0.9
+
+
+def _cells(bounds, tile_bounds):
+    """The 500 m cells of a tile (tile_bounds) a box covers."""
+    x0, y0 = max(bounds[0], tile_bounds[0]), max(bounds[1], tile_bounds[1])
+    x1, y1 = min(bounds[2], tile_bounds[2]), min(bounds[3], tile_bounds[3])
+    return {(col, row) for col in range(int(x0 // CELL), int(math.ceil(x1 / CELL)))
+            for row in range(int(y0 // CELL), int(math.ceil(y1 / CELL)))}
+
+
+def coverage_cells(offering, offerings=()):
+    """The 500 m cells of its tile an offering covers, as far as the catalogue says: where its parts are (Wales'
+    tiles; Scotland's files, see sources.parse_scotland_products), else all of it (England's tiles)."""
+    tile = places.parse_grid_reference(offering.tile)
+    if tile is None or tile.extent is None:
+        return set()
+    if not offering.surveys:
+        return _cells(tile.extent, tile.extent)
+    return set().union(*(_cells(a.bounds, tile.extent) for a in offering.surveys))
+
+
+def coverage_km2(offering, offerings=()):
+    """How much of its tile an offering covers (km², of 25), as far as the catalogue says (see coverage_cells)."""
+    tile = places.parse_grid_reference(offering.tile)
+    if tile is None or tile.extent is None:
+        return 0.0
+    if not offering.surveys:
+        return len(_cells(tile.extent, tile.extent)) * CELL * CELL / 1e6
+    return sum(len(_cells(a.bounds, tile.extent)) * a.share for a in set(offering.surveys)) * CELL * CELL / 1e6
+
+
 def pick_offering(offerings, dataset):
-    """The offering to download for a tile: the newest matching year, then the finest resolution."""
+    """The offering to download for a tile: the survey chosen, or for "newest for each tile" the newest survey
+    that covers the tile (all but a little of what the most complete one covers: a new survey's first squares,
+    or a strip of coast, are passed over for an older survey that covers it all), then the finest resolution."""
     matching = [o for o in offerings if dataset.matches(o.dataset)]
     if not matching:
         return None
+    if dataset.is_latest and len(matching) > 1:
+        cover = [coverage_km2(o, offerings) for o in matching]
+        matching = [o for o, cells in zip(matching, cover) if cells >= COMPLETE_SHARE * max(cover)]
     best = best_dataset([o.dataset for o in matching])
     return next(o for o in matching if o.dataset == best)
+
+
+def partial_cover(dataset, offerings_by_tile, tiles):
+    """(km² a survey covers, km² the most complete survey of its product covers) over the tiles it's offered
+    for, where it covers noticeably less, e.g. (3.0, 25.0) for a new survey's first three squares of a tile; else
+    None."""
+    covered = most = 0
+    for tile in tiles:
+        offerings = offerings_by_tile.get(tile, [])
+        mine = next((o for o in offerings if o.dataset == dataset), None)
+        if mine is None:
+            continue
+        covered += coverage_km2(mine, offerings)
+        most += max(coverage_km2(o, offerings) for o in offerings if o.dataset.product == dataset.product)
+    if not most or covered >= COMPLETE_SHARE * most:
+        return None
+    return round(covered, 1), round(most, 1)
 
 
 def _resolution_value(resolution):

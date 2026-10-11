@@ -18,3 +18,7 @@ ni_place_names.json: towns and villages in Northern Ireland (name, council, lati
 Ordnance Survey of Northern Ireland's gazetteer (published on OpenDataNI).
 (c) Crown copyright. Contains public sector information licensed under the terms of the Open Government
 Licence v3.0.
+
+LIDAR Downloader UK is an independent plugin, not affiliated with or endorsed by Ordnance Survey, Ordnance
+Survey of Northern Ireland, the Environment Agency, the Welsh Government, Natural Resources Wales, the
+Scottish Government or any other provider of the data it uses.

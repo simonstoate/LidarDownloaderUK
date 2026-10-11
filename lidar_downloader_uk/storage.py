@@ -29,6 +29,7 @@ SQUARE_RE = api.SQUARE_10KM_RE
 
 RASTER_PATTERNS = ('*.asc', '*.tif', '*.tiff', '*.ecw', '*.jp2')
 POINT_CLOUD_PATTERNS = ('*.laz', '*.las')
+COPC_SUFFIX = '.copc.laz'
 PHOTO_PATTERNS = ('*.jpg', '*.jpeg')
 # Composite products list the surveys merged into each tile (polygons with flown dates)
 METADATA_PATTERNS = ('*_Metadata.gpkg', '*_metadata.gpkg')
@@ -136,8 +137,12 @@ def find_raster_files(download_dir, tile):
 
 
 def find_point_cloud_files(download_dir, tile):
-    """Return point cloud files (.laz/.las) extracted for a tile."""
-    return _find(download_dir, tile, POINT_CLOUD_PATTERNS)
+    """Return point cloud files (.laz/.las) extracted for a tile: not the COPC copy QGIS makes beside a file it
+    indexes (<file>.copc.laz next to <file>.laz or .las)."""
+    files = _find(download_dir, tile, POINT_CLOUD_PATTERNS)
+    plain = {os.path.normcase(os.path.splitext(f)[0]) for f in files if not f.lower().endswith(COPC_SUFFIX)}
+    return [f for f in files
+            if not (f.lower().endswith(COPC_SUFFIX) and os.path.normcase(f[:-len(COPC_SUFFIX)]) in plain)]
 
 
 def find_photo_files(download_dir, tile):

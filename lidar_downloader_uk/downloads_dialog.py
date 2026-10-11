@@ -5,6 +5,8 @@
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt import QtWidgets
 
+from . import api
+
 
 def format_bytes(size):
     """A size in bytes for people, e.g. '1.2 GB' ('unknown' for None)."""
@@ -93,7 +95,8 @@ class DownloadsDialog(QtWidgets.QDialog):
         if selected is not None and selected < len(rows):
             self.tree.setCurrentItem(self.tree.topLevelItem(selected))
         self.lblSummary.setText(
-            f'{len(rows)} survey(s), {format_bytes(total)} in {folder}. Free on this drive: {format_bytes(free)}.'
+            f'{api.plural(len(rows), "survey")}, {format_bytes(total)} in {folder}. Free on this drive: '
+            f'{format_bytes(free)}.'
             if rows else f'Nothing downloaded yet in {folder}. Free on this drive: {format_bytes(free)}.')
         self._update_buttons()
 

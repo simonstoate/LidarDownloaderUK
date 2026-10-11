@@ -283,6 +283,44 @@ def survey_layer_name(path):
     return name
 
 
+def write_survey_dates(path, surveys, bounds, resolution):
+    """A Welsh tile's survey dates (api.SurveyArea, from DataMapWales' tile catalogues) as the GeoJSON file Survey
+    dates shows: the parts of one survey flown on the same date joined into one area, cut to the tile's square
+    (bounds: xmin, ymin, xmax, ymax), with the fields England's survey files have that it needs (SRVY_YEAR, SRVY_TYPE,
+    FILENAME: the survey, RESOLUTION) and FLOWN, the date as text. Returns the number of areas written."""
+    def square(x0, y0, x1, y1):
+        return ogr.CreateGeometryFromWkt(f'POLYGON(({x0} {y0},{x1} {y0},{x1} {y1},{x0} {y1},{x0} {y0}))')
+
+    tile = square(*bounds)
+    areas = {}
+    for survey in surveys:
+        part = square(*survey.bounds).Intersection(tile)
+        if part is None or part.IsEmpty() or part.GetArea() < 1:
+            continue
+        key = (survey.year, survey.flown, survey.kind, survey.name)
+        areas[key] = part if key not in areas else areas[key].Union(part)
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(27700)
+    part_path = path + '.part'
+    remove_file(part_path)
+    ds = ogr.GetDriverByName('GeoJSON').CreateDataSource(part_path)
+    layer = ds.CreateLayer('survey_dates', srs, ogr.wkbMultiPolygon)
+    for name, kind in (('SRVY_YEAR', ogr.OFTInteger), ('FLOWN', ogr.OFTString), ('SRVY_TYPE', ogr.OFTString),
+                       ('FILENAME', ogr.OFTString), ('RESOLUTION', ogr.OFTReal)):
+        layer.CreateField(ogr.FieldDefn(name, kind))
+    for (year, flown, kind, name), geometry in sorted(areas.items()):
+        feature = ogr.Feature(layer.GetLayerDefn())
+        for field, value in (('SRVY_YEAR', year), ('FLOWN', flown), ('SRVY_TYPE', kind), ('FILENAME', name),
+                             ('RESOLUTION', float(resolution))):
+            feature.SetField(field, value)
+        feature.SetGeometry(ogr.ForceToMultiPolygon(geometry))
+        layer.CreateFeature(feature)
+        feature = None
+    layer = ds = None
+    os.replace(part_path, path)
+    return len(areas)
+
+
 def geojson_feature_collection(geometries_json, epsg):
     """Wrap GeoJSON geometry strings (already in EPSG:epsg) as a FeatureCollection GDAL can read."""
     return json.dumps({
@@ -339,10 +377,10 @@ def mm_grids(folder):
 
 def convert_mm_grids(folder):
     """Natural Resources Wales' archive grids store heights in millimetres (files named ..._mm_units.asc):
-    rewrite each as a compressed GeoTIFF in metres (British National Grid, no data kept) and remove the
-    millimetre grid. Only when the user agrees: it changes the downloaded files. Returns the number converted (0 if
-    there's nothing to do, e.g. already converted)."""
-    converted = 0
+    rewrite each as a compressed GeoTIFF in metres (British National Grid, no data kept), with overviews of its own,
+    and remove the millimetre grid and its overviews. Only when the user agrees: it changes the downloaded files.
+    Returns the number converted (0 if there's nothing to do, e.g. already converted)."""
+    converted = []
     for path in mm_grids(folder):
         output = path[:-len(f'{MM_UNITS_SUFFIX}.asc')] + '.tif'
         src = gdal.Open(path)
@@ -365,10 +403,11 @@ def convert_mm_grids(folder):
         out_band.WriteArray(values)
         out_band = out = band = src = None
         os.replace(part, output)
-        for sidecar in (path, os.path.splitext(path)[0] + '.prj', path + '.aux.xml'):
+        for sidecar in (path, os.path.splitext(path)[0] + '.prj', path + '.aux.xml', path + '.ovr'):
             remove_file(sidecar)
-        converted += 1
-    return converted
+        converted.append(output)
+    add_overviews(converted)  # (the millimetre grid's went with it)
+    return len(converted)
 
 
 def add_overviews(paths):

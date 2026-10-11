@@ -14,6 +14,7 @@ from qgis.core import Qgis, QgsApplication, QgsMapLayerProxyModel
 from qgis.gui import QgsMapLayerComboBox
 
 HELP_URL = 'https://github.com/simonstoate/LidarDownloaderUK#readme'
+FEEDBACK_URL = 'https://github.com/simonstoate/LidarDownloaderUK/issues'
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'lidar_downloader_dialog_base.ui'))
@@ -145,10 +146,13 @@ class LidarDownloaderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.layDatasetRow.addWidget(self.btnDatasetInfo)
         self.layDataset.insertLayout(0, self.layDatasetRow)
 
-        # Help and the official data sources, at the foot of the dock
+        # Help, a way to report a problem or suggest something, and the official data sources, at the foot of the dock
         self.lblHelp = QtWidgets.QLabel(f'<a href="{HELP_URL}">Help and guide</a>', self)
         self.lblHelp.setOpenExternalLinks(True)
         self.lblHelp.setToolTip(HELP_URL)
+        self.lblFeedback = QtWidgets.QLabel(f'· <a href="{FEEDBACK_URL}">Feedback</a>', self)
+        self.lblFeedback.setOpenExternalLinks(True)
+        self.lblFeedback.setToolTip("Report a problem or suggest something (on GitHub)")
         self.btnSources = QtWidgets.QToolButton(self)
         self.btnSources.setText("Official data sources")
         self.btnSources.setToolTip("Each nation's official LIDAR portal, and where to find Northern Ireland's data")
@@ -157,6 +161,7 @@ class LidarDownloaderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.btnSources.setMenu(QtWidgets.QMenu(self.btnSources))
         foot = QtWidgets.QHBoxLayout()
         foot.addWidget(self.lblHelp)
+        foot.addWidget(self.lblFeedback)
         foot.addStretch(1)
         foot.addWidget(self.btnSources)
         self.layMain.addLayout(foot)

@@ -2,14 +2,15 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """The OSGB 5km grid layer: loading, styling, selection."""
 
+import math
 import os
 
 from qgis.PyQt.QtCore import QObject, QTimer, pyqtSignal
 from qgis.PyQt.QtGui import QColor
 from qgis.core import (
     Qgis, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsFeatureRequest, QgsFillSymbol, QgsGeometry,
-    QgsPalLayerSettings, QgsProject, QgsRectangle, QgsRuleBasedRenderer, QgsTextBufferSettings, QgsTextFormat,
-    QgsVectorLayer, QgsVectorLayerSimpleLabeling)
+    QgsPalLayerSettings, QgsProject, QgsProperty, QgsRectangle, QgsRuleBasedRenderer, QgsSymbolLayer,
+    QgsTextBufferSettings, QgsTextFormat, QgsVectorLayer, QgsVectorLayerSimpleLabeling)
 
 LAYER_NAME = 'OSGB Grid'
 GRID_FILE = os.path.join('data', 'osgb_grid_5km.gpkg')
@@ -32,6 +33,32 @@ TILE_NAME_FIELD = 'TILE_NAME'
 # Hide tile labels when zoomed out further than this (1:500,000): at national
 # scale 10,000+ labels would just be clutter.
 LABELS_MAX_SCALE = 500000
+# Zoomed out beyond 1:1,000,000 the squares' outlines fade, to faint by 1:3,000,000, so the grid isn't a black block
+# at national scale (the shading of tiles stays)
+FADE_SCALES = (1000000, 3000000)
+
+
+def _stroke_colour_key():
+    """The symbol layer property for the outline colour, looked up by name as it's spelt differently across versions:
+    Property.StrokeColor from QGIS 3.36, PropertyStrokeColor before. None if neither is there."""
+    enum = getattr(QgsSymbolLayer, 'Property', None)
+    for owner, name in ((enum, 'StrokeColor'), (enum, 'PropertyStrokeColor'), (QgsSymbolLayer, 'PropertyStrokeColor')):
+        if owner is not None and hasattr(owner, name):
+            return getattr(owner, name)
+    return None
+
+
+STROKE_COLOR = _stroke_colour_key()
+
+
+def fading_outline(symbol, colour, faintest):
+    """Make a fill symbol's outline fade as the map zooms out (FADE_SCALES): colour ('r,g,b') at 1:1,000,000 and
+    closer, its opacity (0-255) down to faintest by 1:3,000,000. Returns the symbol."""
+    if STROKE_COLOR is not None:  # (otherwise the outline just doesn't fade)
+        near, far = FADE_SCALES
+        symbol.symbolLayer(0).setDataDefinedProperty(STROKE_COLOR, QgsProperty.fromExpression(
+            f'color_rgba({colour}, scale_linear(@map_scale, {near}, {far}, 255, {faintest}))'))
+    return symbol
 
 
 def open_grid(plugin_dir, name=LAYER_NAME):
@@ -40,10 +67,11 @@ def open_grid(plugin_dir, name=LAYER_NAME):
     return QgsVectorLayer(f'{path}|layername=osgb_grid_5km', name, 'ogr')
 
 
-def intersecting_features(layer, geometries, crs, data_only=True, transform_context=None, touching=True):
+def intersecting_features(layer, geometries, crs, data_only=True, transform_context=None, touching=True,
+                          known=()):
     """Grid features intersecting any of the geometries (given in crs); with data_only, only squares with data
-    from one of the sources (HAS_DATA); touching=False leaves out squares that only touch them (along an edge,
-    as with a site boundary drawn along a tile's edge)."""
+    from one of the sources (HAS_DATA, or among known: tiles a search has found data for since); touching=False
+    leaves out squares that only touch them (along an edge, as with a site boundary drawn along a tile's edge)."""
     context = transform_context or QgsProject.instance().transformContext()
     transform = QgsCoordinateTransform(crs, layer.crs(), context)
     found = {}
@@ -58,7 +86,7 @@ def intersecting_features(layer, geometries, crs, data_only=True, transform_cont
         for feature in layer.getFeatures(QgsFeatureRequest().setFilterRect(geom.boundingBox())):
             if feature.id() in found:
                 continue
-            if data_only and feature[HAS_DATA_FIELD] != 't':
+            if data_only and feature[HAS_DATA_FIELD] != 't' and feature[TILE_NAME_FIELD] not in known:
                 continue
             square = feature.geometry().constGet()
             if engine.intersects(square) and (touching or not engine.touches(square)):
@@ -70,8 +98,10 @@ def search_areas(tile_extents, crs, transform_context=None):
     """The areas to search, one per 100 km square: [{'square', 'polygon', 'bbox'}] (tasks.SearchTask).
 
     tile_extents is {tile name: QgsRectangle in crs} (the grid's British National Grid). polygon is
-    the tiles' bounding box as a GeoJSON Polygon in WGS84 (the Environment Agency and Scottish
-    searches take one polygon); bbox is the same box in British National Grid (DataMapWales).
+    the tiles' bounding box as a GeoJSON Polygon in WGS84 (the Environment Agency's search takes one
+    polygon); bbox is the same box in British National Grid (DataMapWales); squares is the box widened
+    to whole 10 km squares, in WGS84 (the Scottish search: a survey's files in a square come together,
+    see sources.parse_scotland_products).
     """
     groups = {}
     for tile, extent in tile_extents.items():
@@ -83,14 +113,25 @@ def search_areas(tile_extents, crs, transform_context=None):
     context = transform_context or QgsProject.instance().transformContext()
     to_wgs84 = QgsCoordinateTransform(crs, QgsCoordinateReferenceSystem('EPSG:4326'), context)
     to_bng = QgsCoordinateTransform(crs, QgsCoordinateReferenceSystem('EPSG:27700'), context)
+    bng_to_wgs84 = QgsCoordinateTransform(QgsCoordinateReferenceSystem('EPSG:27700'),
+                                          QgsCoordinateReferenceSystem('EPSG:4326'), context)
+
+    def wgs84_ring(box, transform):
+        r = transform.transformBoundingBox(box)
+        return [[r.xMinimum(), r.yMinimum()], [r.xMaximum(), r.yMinimum()], [r.xMaximum(), r.yMaximum()],
+                [r.xMinimum(), r.yMaximum()], [r.xMinimum(), r.yMinimum()]]
+
     areas = []
     for square, rect in groups.items():
-        r = to_wgs84.transformBoundingBox(rect)
-        ring = [[r.xMinimum(), r.yMinimum()], [r.xMaximum(), r.yMinimum()], [r.xMaximum(), r.yMaximum()],
-                [r.xMinimum(), r.yMaximum()], [r.xMinimum(), r.yMinimum()]]
         b = to_bng.transformBoundingBox(rect)
-        areas.append({'square': square, 'polygon': {'type': 'Polygon', 'coordinates': [ring]},
-                      'bbox': (b.xMinimum(), b.yMinimum(), b.xMaximum(), b.yMaximum())})
+        tens = QgsRectangle(math.floor(b.xMinimum() / 10000 + 1e-6) * 10000,
+                            math.floor(b.yMinimum() / 10000 + 1e-6) * 10000,
+                            math.ceil(b.xMaximum() / 10000 - 1e-6) * 10000,
+                            math.ceil(b.yMaximum() / 10000 - 1e-6) * 10000)
+        areas.append({'square': square,
+                      'polygon': {'type': 'Polygon', 'coordinates': [wgs84_ring(rect, to_wgs84)]},
+                      'bbox': (b.xMinimum(), b.yMinimum(), b.xMaximum(), b.yMaximum()),
+                      'squares': {'type': 'Polygon', 'coordinates': [wgs84_ring(tens, bng_to_wgs84)]}})
     return areas
 
 
@@ -111,6 +152,10 @@ class GridLayer(QObject):
         self.iface = iface
         self.path = os.path.join(plugin_dir, GRID_FILE)
         self.layer_id = None
+        # Tiles a search has found data for (HAS_DATA is a snapshot from when the grid was built: a survey
+        # published since isn't in it)
+        self.known_data = set()
+        self.no_data = None  # the grid's squares without data (see mark_data)
         QgsProject.instance().layersWillBeRemoved.connect(self._on_layers_will_be_removed)
 
     def cleanup(self):
@@ -246,6 +291,7 @@ class GridLayer(QObject):
 
     def apply_style(self, shading):
         """Hollow squares; downloaded tiles filled; squares with no data from any source faint (most are sea).
+        Zoomed out, the outlines fade.
 
         shading is a list of (label, colour, tile names), one per dataset, e.g. from
         shading_entries(); a plain list of tile names is shaded as "Downloaded".
@@ -256,19 +302,20 @@ class GridLayer(QObject):
         if shading and isinstance(shading[0], str):
             shading = [('Downloaded', DOWNLOADED_COLOUR, shading)]
 
-        base_symbol = QgsFillSymbol.createSimple(
-            {'color': '0,0,0,0', 'outline_color': 'black', 'outline_width': '0.26', 'style': 'no'})
-        outside_symbol = QgsFillSymbol.createSimple(
-            {'color': '0,0,0,0', 'style': 'no', 'outline_color': '190,190,190', 'outline_width': '0.1'})
+        base_symbol = fading_outline(QgsFillSymbol.createSimple(
+            {'color': '0,0,0,0', 'outline_color': 'black', 'outline_width': '0.26', 'style': 'no'}), '0,0,0', 30)
+        outside_symbol = fading_outline(QgsFillSymbol.createSimple(
+            {'color': '0,0,0,0', 'style': 'no', 'outline_color': '190,190,190', 'outline_width': '0.1'}),
+            '190,190,190', 0)
 
         root_rule = QgsRuleBasedRenderer.Rule(None)
         for label, colour, tiles in shading or []:
             if not tiles:
                 continue
             c = QColor(colour)
-            symbol = QgsFillSymbol.createSimple(
+            symbol = fading_outline(QgsFillSymbol.createSimple(
                 {'color': f'{c.red()},{c.green()},{c.blue()},110', 'outline_color': 'black',
-                 'outline_style': 'solid', 'outline_width': '0.26', 'style': 'solid'})
+                 'outline_style': 'solid', 'outline_width': '0.26', 'style': 'solid'}), '0,0,0', 30)
             tile_list = ",".join(f"'{t}'" for t in sorted(tiles))
             rule = QgsRuleBasedRenderer.Rule(symbol)
             rule.setFilterExpression(f'"TILE_NAME" IN ({tile_list})')
@@ -276,7 +323,9 @@ class GridLayer(QObject):
             root_rule.appendChild(rule)
 
         rule_outside = QgsRuleBasedRenderer.Rule(outside_symbol)
-        rule_outside.setFilterExpression(f"\"{HAS_DATA_FIELD}\" = 'f'")
+        known = ",".join(f"'{t}'" for t in sorted(self.known_data))
+        rule_outside.setFilterExpression(f"\"{HAS_DATA_FIELD}\" = 'f'"
+                                         + (f" AND \"{TILE_NAME_FIELD}\" NOT IN ({known})" if known else ''))
         rule_outside.setLabel('No data')
         root_rule.appendChild(rule_outside)
 
@@ -348,7 +397,8 @@ class GridLayer(QObject):
         layer = self.layer()
         if layer is None:
             return None
-        ids = [f.id() for f in intersecting_features(layer, geometries, crs, data_only, touching=touching)]
+        ids = [f.id() for f in intersecting_features(layer, geometries, crs, data_only, touching=touching,
+                                                     known=self.known_data)]
         selected = set(layer.selectedFeatureIds())
         if mode == 'toggle':
             layer.selectByIds(list(selected.symmetric_difference(ids)))
@@ -363,8 +413,9 @@ class GridLayer(QObject):
         return len(ids)
 
     def tiles_in(self, rect, crs, limit):
-        """{tile name: QgsRectangle in the grid's CRS} for the tiles with data in rect (given in crs),
-        or None if there are more than limit of them (or the grid isn't loaded)."""
+        """{tile name: QgsRectangle in the grid's CRS} for the tiles in rect (given in crs), squares without data
+        too (a survey may have been published since the grid was built), or None if more than limit of them have
+        data (or the grid isn't loaded)."""
         layer = self.layer()
         if layer is None:
             return None
@@ -375,14 +426,25 @@ class GridLayer(QObject):
             return None
         if box.width() * box.height() > limit * 5000 * 5000 * 4:
             return None  # far too big: don't even read the features
-        tiles = {}
+        tiles, with_data = {}, 0
         for feature in layer.getFeatures(QgsFeatureRequest().setFilterRect(box)):
-            if feature[HAS_DATA_FIELD] != 't':
-                continue
             tiles[feature[TILE_NAME_FIELD]] = feature.geometry().boundingBox()
-            if len(tiles) > limit:
+            with_data += feature[HAS_DATA_FIELD] == 't' or feature[TILE_NAME_FIELD] in self.known_data
+            if with_data > limit:
                 return None
         return tiles
+
+    def mark_data(self, tiles):
+        """Tiles a search found data for count as having data from now on (only those the grid has as without data
+        are kept: the rest have it already). Returns True if that's news."""
+        if self.no_data is None:  # (read once: the squares without data, most of them sea)
+            grid = open_grid(os.path.dirname(os.path.dirname(self.path)))
+            request = QgsFeatureRequest().setFilterExpression(f"\"{HAS_DATA_FIELD}\" != 't'")
+            self.no_data = {f[TILE_NAME_FIELD] for f in grid.getFeatures(request)}
+            grid = None
+        new = (set(tiles) & self.no_data) - self.known_data
+        self.known_data |= new
+        return bool(new)
 
     def select_names(self, names):
         """Select exactly these tiles (by name). Returns the number found."""

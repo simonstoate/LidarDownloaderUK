@@ -5,9 +5,10 @@ r"""Build the plugin's 5 km grid (lidar_downloader_uk/data/osgb_grid_5km.gpkg).
 The squares are Ordnance Survey's British National Grid (osbng-grids, OGL v3.0): every 5 km square of
 the grid, sea included. Each is marked HAS_DATA = 't' if any source had LIDAR for it when the grid was
 built, else 'f': the Environment Agency's survey service (one search per 100 km square), DataMapWales'
-tile catalogues and the Scottish Remote Sensing Portal's DTM / DSM collections. The plugin uses the flag
-for shading and for the "tiles in view / under layer" helpers; what's downloadable is always checked
-live, so re-running this only refreshes the shading.
+tile catalogues and the Scottish Remote Sensing Portal's collections, placed as the plugin places them.
+The plugin draws squares without data faintly and leaves them out when picking with a box or going to a
+place, until a search finds data in one; what's downloadable is always checked live, so re-running this
+refreshes the snapshot (e.g. after a nation publishes a new survey).
 
 Run with the Python that ships with QGIS (it needs GDAL's Parquet driver), e.g. on Windows:
     "C:\Program Files\QGIS 4.2.1\bin\python-qgis.bat" tools\build_grid.py
@@ -26,7 +27,7 @@ from osgeo import gdal, ogr, osr
 gdal.UseExceptions()
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO)
-from lidar_downloader_uk import api, sources  # noqa: E402  (pure Python: no QGIS needed)
+from lidar_downloader_uk import sources  # noqa: E402  (pure Python: no QGIS needed)
 OUTPUT = os.path.join(REPO, 'lidar_downloader_uk', 'data', 'osgb_grid_5km.gpkg')
 SOURCE_URL = ('https://raw.githubusercontent.com/OrdnanceSurvey/osbng-grids/main/'
               'osbng-grids/data/geoparquet/osbng_grid_5km.parquet')
@@ -60,33 +61,39 @@ def request_json(url, body=None):
 
 
 def wales_tiles():
-    """Tiles with data in DataMapWales' 2020-22 and archive catalogues (all features, no area filter)."""
+    """Tiles with data in DataMapWales' 2020-22 and archive catalogues (all features, no area filter), placed as the
+    plugin places them (the archive by its tiles' outlines)."""
     found = set()
-    for layer, field in ((sources.WALES_NATIONAL_LAYER, 'british_gr'), (sources.WALES_ARCHIVE_LAYER, 'gb_ng')):
+    for layer, parse in ((sources.WALES_NATIONAL_LAYER, sources.parse_wales_national),
+                         (sources.WALES_ARCHIVE_LAYER, sources.parse_wales_archive)):
         url = (f'{sources.WALES_WFS}?service=WFS&version=2.0.0&request=GetFeature&typeNames={layer}'
-               f'&outputFormat=application/json&count=100000&propertyName={field}')
+               f'&outputFormat=application/json&count=100000')
         data = request_json(url)
-        for feature in data.get('features', []):
-            squares = api.square_tiles((feature.get('properties') or {}).get(field))
-            if squares:
-                found.update(squares[1])
-        print(f'  Wales {layer}: {len(data.get("features", []))} squares')
+        tiles = {o.tile for o in parse(data)}
+        found |= tiles
+        print(f'  Wales {layer}: {len(data.get("features", []))} catalogue tiles, {len(tiles)} 5 km tiles')
     return found
 
 
-def scotland_tiles(wgs84_ring_for):
-    """Tiles with Scottish DTM / DSM products (one catalogue search per 100 km square of Scotland)."""
+def scotland_tiles():
+    """Tiles with Scottish products: every collection (point clouds too: they show where a survey's files of 5 and
+    10 km squares have data), searched over the whole country a page at a time, placed as the plugin places them."""
     collections = sources.parse_scotland_collections(request_json(sources.SCOTLAND_COLLECTIONS_URL))
-    wanted = {name: c for name, c in collections.items() if c.product != 'scotland_lidar_point_cloud'}
-    found = set()
-    for east in range(0, 700, 100):
-        for north in range(500, 1300, 100):
-            polygon = {'type': 'Polygon', 'coordinates': [wgs84_ring_for(east * 1000, north * 1000)]}
-            data = request_json(sources.SCOTLAND_SEARCH_URL, sources.scotland_search_body(wanted, polygon, 20000))
-            offerings = sources.parse_scotland_products(data, wanted)
-            found.update(o.tile for o in offerings)
-            if offerings:
-                print(f'  Scotland {east:3},{north:4} km: {len(data.get("result", []))} products')
+    scotland = {'type': 'Polygon', 'coordinates': [[[-8.8, 54.5], [-0.5, 54.5], [-0.5, 61.0], [-8.8, 61.0],
+                                                    [-8.8, 54.5]]]}
+    items = []
+    for name in sorted(collections):
+        start = len(items)
+        while True:
+            body = sources.scotland_search_body([name], scotland, limit=sources.SCOTLAND_PAGE,
+                                                offset=len(items) - start)
+            page = request_json(sources.SCOTLAND_SEARCH_URL, body).get('result', [])
+            items += page
+            if len(page) < sources.SCOTLAND_PAGE:
+                break
+        print(f'  Scotland {name}: {len(items) - start} products')
+    found = {o.tile for o in sources.parse_scotland_products({'result': items}, collections)}
+    print(f'  Scotland: {len(found)} 5 km tiles')
     return found
 
 
@@ -98,13 +105,6 @@ def tiles_with_data():
     for srs in (bng, wgs):
         srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
     to_wgs = osr.CoordinateTransformation(bng, wgs)
-
-    def wgs84_ring(e, n):
-        corners = [to_wgs.TransformPoint(x, y)[:2]
-                   for x, y in ((e, n), (e + 100000, n), (e + 100000, n + 100000), (e, n + 100000))]
-        lons, lats = [c[0] for c in corners], [c[1] for c in corners]
-        return [[min(lons), min(lats)], [max(lons), min(lats)], [max(lons), max(lats)], [min(lons), max(lats)],
-                [min(lons), min(lats)]]
 
     print('Environment Agency...')
     found = set()
@@ -136,7 +136,7 @@ def tiles_with_data():
     print('Wales...')
     found |= wales_tiles()
     print('Scotland...')
-    found |= scotland_tiles(wgs84_ring)
+    found |= scotland_tiles()
     return found
 
 

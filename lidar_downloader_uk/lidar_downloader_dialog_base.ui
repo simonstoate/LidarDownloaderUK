@@ -289,7 +289,7 @@
             <string>Survey dates</string>
            </property>
            <property name="toolTip">
-            <string>On or off for the selected tiles: when the ground in each was actually flown (England's Composite DTM / DSM and SurfZone DEM: the surveys merged into the tile, from the survey file that comes with it), a layer per tile, coloured by year</string>
+            <string>On or off for the selected tiles: when the ground in each was actually flown, a layer per tile, coloured by year. England's Composite DTM / DSM and SurfZone DEM: the surveys merged into the tile, from the survey file that comes with it. Wales' DTMs and DSMs: from DataMapWales' tile catalogue</string>
            </property>
            <property name="checkable">
             <bool>true</bool>

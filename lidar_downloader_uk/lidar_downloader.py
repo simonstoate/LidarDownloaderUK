@@ -75,7 +75,10 @@ SELECT_TILES_PROMPT = 'Select a tile to see the data available'
 SURVEY_DATES_GROUP = 'Survey dates'
 SURVEY_DATES_PROPERTY = 'lidar_downloader/survey_dates_of'
 SURVEY_COLOURS_PROPERTY = 'lidar_downloader/survey_colours'  # as COLOURS_PROPERTY, for survey dates
-# "Go to" adds the tiles covering a place to the selection, unless that's more than this many
+# Shown once, the first time a new user opens the panel
+FIRST_TIP = ("To start, type a place, postcode or grid reference in Go to and press Enter (or pick tiles on the "
+             "map with the select icon), choose the data, then click Download.")
+# "Go to" selects the tiles covering a place in place of the selection, unless that's more than this many
 MAX_GO_TO_TILES = 16
 BNG = 'EPSG:27700'
 
@@ -84,9 +87,18 @@ def format_size(megabytes):
     return f"{megabytes / 1000:.1f} GB" if megabytes >= 1000 else f"{megabytes:.0f} MB"
 
 
-def plural(count, word):
-    """E.g. '1 layer', '3 layers'."""
-    return f"{count:,} {word}{'' if count == 1 else 's'}"
+plural = api.plural  # e.g. '1 layer', '3 layers'
+
+
+def first_use():
+    """True if the plugin hasn't saved any settings yet: a new user (it saves the download folder when the panel
+    first opens)."""
+    settings = QSettings()
+    settings.beginGroup('LidarDownloader')
+    try:
+        return not settings.allKeys()
+    finally:
+        settings.endGroup()
 
 
 class LoadOutcome:
@@ -103,6 +115,9 @@ class LoadOutcome:
         self.cropped = False  # a layer cropped to the area was added (or was there already)
         self.missed = False   # the "Crop to" area missed the tiles: they loaded as downloaded
         self.clouds = False   # point clouds were loaded (they always load whole)
+        # Point cloud tiles of several files whose COPC copies are being made first (convert_point_clouds): (tile,
+        # dataset folder, files, layer name, group, Dataset)
+        self.converting = []
 
 
 def choose_place(parent, labels):
@@ -160,6 +175,7 @@ class LidarDownloader:
         self.search_timer = None
         self.provider = None
         self.post_task = None
+        self.cloud_task = None  # point clouds being converted to COPC (convert_point_clouds)
         # Download folders already checked for an old folder layout, and for millimetre grids, this session
         self.migration_checked = set()
         self.units_checked = set()
@@ -180,6 +196,7 @@ class LidarDownloader:
         # The dataset of the download running, and a resume waiting for its tiles' availability check
         self.download_dataset = None
         self.resume_pending = False
+        self.show_tip = False  # FIRST_TIP, the first time a new user opens the panel
         # The tiles selected when the download (or a mosaic made in the background) started: deselected when it's
         # loaded, unless the selection has changed meanwhile
         self.download_selection = set()
@@ -232,6 +249,11 @@ class LidarDownloader:
     def initGui(self):
         """Build the panel (hidden until the toolbar button is clicked), its map tools, and the toolbar button and
         Web menu entry."""
+        # A new user gets today's defaults; someone who used the plugin before keeps what they had: zips were kept
+        # by default before 0.15
+        self.show_tip = first_use()
+        if not self.show_tip and not QSettings().contains(SETTINGS_KEY_DELETE_ZIPS):
+            QSettings().setValue(SETTINGS_KEY_DELETE_ZIPS, False)
         # Settings of features the plugin no longer has (styles, the drawn-area buffer, contours, crop memory)
         for key in ('styles', 'area_buffer', 'contour_interval', 'contour_smoothing', 'crop_to_layer'):
             QSettings().remove(f'LidarDownloader/{key}')
@@ -342,13 +364,15 @@ class LidarDownloader:
                 canvas.unsetMapTool(self.pick_tool)
             self.pick_tool.release()
         self.pick_tool = None
-        for task in [self.task, self.search_task, self.post_task, self.coverage_task, self.geocode_task]:
+        for task in [self.task, self.search_task, self.post_task, self.coverage_task, self.geocode_task,
+                     self.cloud_task]:
             if task is not None:
                 task.on_finished = None
                 task.cancel()
         self.task = None
         self.search_task = None
         self.post_task = None
+        self.cloud_task = None
         self.coverage_task = None
         self.geocode_task = None
 
@@ -385,6 +409,9 @@ class LidarDownloader:
         self.refresh_grid_style()
         self.update_selection_label()
         self.update_resume_button()
+        if self.show_tip:
+            self.show_tip = False
+            self.notify(FIRST_TIP, Qgis.MessageLevel.Info, duration=0)  # stays until closed: it's only shown once
 
     def resolve_download_dir(self):
         """Return the saved download folder, setting up Documents/LiDAR Data if needed."""
@@ -428,9 +455,11 @@ class LidarDownloader:
         if not moves:
             return
 
-        lines = [f"  {n} tile(s) of {api.dataset_label(d)}  \u2192  {api.dataset_folder(d).replace(os.sep, '/')}/"
+        lines = [f"  {plural(n, 'tile')} of {api.dataset_label(d)}  \u2192  "
+                 f"{api.dataset_folder(d).replace(os.sep, '/')}/"
                  for d, n in sorted(migrate.summary(moves).items(), key=lambda item: api.dataset_key(item[0]))]
-        skipped_note = (f"\n\n{len(skipped)} item(s) can't be moved automatically and are left where they are "
+        skipped_note = (f"\n\n{plural(len(skipped), 'item')} can't be moved automatically and "
+                        f"{'is left where it is' if len(skipped) == 1 else 'are left where they are'} "
                         "(see the Log Messages panel)." if skipped else "")
         choice = ask_choice(
             self.dock, "Reorganise Downloads?",
@@ -459,10 +488,10 @@ class LidarDownloader:
         repointed += self.reload_layers(changed_vrts)
         self.refresh_grid_style()
         self.update_selection_label()
-        text = (f"Reorganised {len({(m.dataset, m.tile) for m in done})} tile(s); updated {len(changed_vrts)} VRT(s) "
-                f"and {repointed} layer(s) in this project.")
+        text = (f"Reorganised {plural(len({(m.dataset, m.tile) for m in done}), 'tile')}; updated "
+                f"{plural(len(changed_vrts), 'VRT')} and {plural(repointed, 'layer')} in this project.")
         if errors:
-            self.notify(f"{text} {len(errors)} item(s) couldn't be moved.", Qgis.MessageLevel.Warning,
+            self.notify(f"{text} {plural(len(errors), 'item')} couldn't be moved.", Qgis.MessageLevel.Warning,
                         "\n".join(f"{src}: {err}" for src, err in errors))
         else:
             self.notify(text, Qgis.MessageLevel.Success)
@@ -714,7 +743,8 @@ class LidarDownloader:
             self.go_to_place(task.places[index])
 
     def go_to_place(self, place):
-        """Zoom to a place and add the tiles covering it to the selection (if there aren't too many)."""
+        """Zoom to a place and select the tiles covering it, in place of the selection (none if there are too
+        many)."""
         bng = QgsCoordinateReferenceSystem(BNG)
         context = QgsProject.instance().transformContext()
         area = QgsRectangle(*place.extent) if place.extent else None
@@ -747,7 +777,9 @@ class LidarDownloader:
         # Just inside a grid square, so the neighbouring squares' tiles aren't included
         target = (QgsGeometry.fromRect(area.buffered(-1)) if area and area.width() > 2
                   else QgsGeometry.fromPointXY(point))
-        count = len(intersecting_features(self.grid.layer(), [target], bng))
+        count = len(intersecting_features(self.grid.layer(), [target], bng, known=self.grid.known_data))
+        if count == 0 or count > MAX_GO_TO_TILES:
+            self.grid.clear_selection()
         if count == 0:
             self.notify(f"Went to {place.label}: no tiles with data there (the plugin covers England, Wales, "
                         "Scotland and their coasts).", Qgis.MessageLevel.Warning)
@@ -755,9 +787,9 @@ class LidarDownloader:
             self.notify(f"Went to {place.label}. It covers {count} tiles, so none were selected: pick the ones "
                         "you want on the map.", Qgis.MessageLevel.Info)
         else:
-            self.grid.select_intersecting([target], bng, mode='add')
+            self.grid.select_intersecting([target], bng)
             hint = " To keep to your site, tick Crop to and choose its boundary layer." if count > 1 else ""
-            self.notify(f"Went to {place.label}: added {count} tile(s) to the selection.{hint}",
+            self.notify(f"Went to {place.label}: selected {plural(count, 'tile')}.{hint}",
                         Qgis.MessageLevel.Success)
 
     def show_ni_notice(self, place=''):
@@ -919,7 +951,7 @@ class LidarDownloader:
 
     def survey_date_tiles(self):
         """The tiles the Survey dates button switches: the selected tiles downloaded of the chosen dataset, when it's
-        one that comes with survey dates (England's Composite DTM / DSM, the SurfZone DEM)."""
+        one with survey dates (England's Composite DTM / DSM and SurfZone DEM, and Wales' DTMs and DSMs)."""
         if not api.has_survey_dates(self.dataset.product):
             return []
         local = self.local_tiles()
@@ -978,16 +1010,27 @@ class LidarDownloader:
             layer.setCustomProperty(SURVEY_COLOURS_PROPERTY, styles.survey_signature(layer))
 
     def survey_dates_layer(self, tile, dataset, folder):
-        """A tile's survey dates: the surveys in the survey file (a GeoPackage) that came with it, as it is, styled by
-        the year flown; None if the tile came without one."""
-        for path in storage.find_metadata_files(folder, tile):
-            try:
-                name = postprocess.survey_layer_name(path)
-            except Exception:  # a survey file GDAL can't read: as if there were none
-                name = None
-            if not name:
+        """A tile's survey dates, styled by the year flown; None if it has none. England's: the surveys in the survey
+        file (a GeoPackage) that came with the tile, as it is. Wales': when each part of the tile was flown, from
+        DataMapWales' tile catalogue (welsh_survey_dates)."""
+        if api.product_source(dataset.product) == 'wales':
+            path = self.welsh_survey_dates(tile, dataset, folder)
+            files = [(path, '')] if path else []
+            about = "When each part of the tile was flown, from DataMapWales' tile catalogue."
+        else:
+            files = []
+            for path in storage.find_metadata_files(folder, tile):
+                try:
+                    name = postprocess.survey_layer_name(path)
+                except Exception:  # a survey file GDAL can't read: as if there were none
+                    name = None
+                files.append((path, name))
+            about = ("The surveys merged into the tile, with when each was flown, from the survey file that came with "
+                     "it.")
+        for path, name in files:
+            if name is None:
                 continue
-            layer = QgsVectorLayer(f"{path}|layername={name}", f"{tile} survey dates", 'ogr')
+            layer = QgsVectorLayer(f"{path}|layername={name}" if name else path, f"{tile} survey dates", 'ogr')
             if not layer.isValid():
                 continue
             styles.style_survey_dates(layer)
@@ -995,12 +1038,31 @@ class LidarDownloader:
             self.describe_layer(layer, dataset)
             metadata = layer.metadata()
             metadata.setTitle(f"{tile}: when it was flown ({api.dataset_label(dataset)})")
-            metadata.setAbstract("The surveys merged into the tile, with when each was flown, from the survey file "
-                                 "that came with it.")
+            metadata.setAbstract(about)
             layer.setMetadata(metadata)
             layer.setCustomProperty(SURVEY_DATES_PROPERTY, tile)
             return layer
         return None
+
+    def welsh_survey_dates(self, tile, dataset, folder):
+        """The file of a Welsh tile's survey dates (<tile>_survey_dates.geojson, beside its files): made the first time
+        from what the search found in DataMapWales' tile catalogue for it (postprocess.write_survey_dates), then
+        reused. None if there's none and the search hasn't found the tile's dates (yet)."""
+        folders = [path for path in (storage.extract_path(folder, tile), os.path.join(folder, tile[:4]))
+                   if os.path.isdir(path)]
+        for path in (os.path.join(base, f'{tile}_survey_dates.geojson') for base in folders):
+            if os.path.exists(path):
+                return path
+        offering = next((o for o in self.offerings_by_tile.get(tile, []) if o.dataset == dataset), None)
+        if not folders or offering is None or not offering.surveys:
+            return None
+        path = os.path.join(folders[0], f'{tile}_survey_dates.geojson')
+        try:
+            written = postprocess.write_survey_dates(path, offering.surveys, places.parse_grid_reference(tile).extent,
+                                                     dataset.resolution)
+        except (OSError, RuntimeError, ValueError):
+            return None
+        return path if written else None
 
     # ----------------------------------------------------------------- helpers
 
@@ -1470,6 +1532,9 @@ class LidarDownloader:
             if offering.rights:
                 self.survey_rights[offering.dataset] = offering.rights
         self.searched_tiles.update(requested)
+        # The grid's has-data flag is a snapshot: a tile found to have data counts as having it
+        if self.grid is not None:
+            self.grid.mark_data(t for t in requested if self.offerings_by_tile[t])
 
     def refresh_dataset_menu(self, search_error=None):
         """List the datasets available for the selected tiles, keeping the current choice."""
@@ -1485,7 +1550,13 @@ class LidarDownloader:
         datasets = api.sorted_datasets(set(coverage) | always | {self.dataset})
 
         def counts(dataset):
-            return f"  ({len(coverage.get(dataset, ()))}/{len(known)} tiles)" if known else ''
+            """'  (2/3 tiles)', and for a survey that covers only part of them (a new survey's first squares, a strip
+            of coast) how much: '  (1/1 tiles; covers 3 of 25 km²)', of what the most complete survey covers."""
+            if not known:
+                return ''
+            part = api.partial_cover(dataset, self.offerings_by_tile, known) if dataset.is_concrete else None
+            covers = f"; covers {part[0]:g} of {part[1]:g} km²" if part else ''
+            return f"  ({len(coverage.get(dataset, ()))}/{len(known)} tiles{covers})"
 
         def add_nodes(menu, nodes):
             for label, child in nodes:
@@ -1621,11 +1692,14 @@ class LidarDownloader:
         """
         new = [t for t in tiles if t not in existing]
         if existing:
+            them = 'it' if len(existing) == 1 else 'them'
             choice = ask_choice(
                 self.dock, "Already Downloaded",
-                f"{len(existing)} of the {len(tiles)} tile(s) are already downloaded.",
-                f"Skipping them leaves {len(new)} to download "
-                f"(about {format_size(self.download_size_mb(new)[0])}).",
+                f"{len(existing)} of the {len(tiles)} tiles {'is' if len(existing) == 1 else 'are'} already "
+                "downloaded." if len(tiles) > 1 else "The tile is already downloaded.",
+                f"Skipping {them} leaves {plural(len(new), 'tile')} to download "
+                f"(about {format_size(self.download_size_mb(new)[0])})." if new else
+                f"Skipping {them} leaves nothing to download.",
                 ["Skip existing", "Download all again"])
             if choice is None:
                 return None
@@ -1695,7 +1769,8 @@ class LidarDownloader:
                 return
         tile_names, unavailable, _ = self.availability(tile_names)
         if unavailable:
-            self.notify(f"Skipping {len(unavailable)} tile(s) with no {api.dataset_label(self.dataset)} data.",
+            self.notify(f"Skipping {plural(len(unavailable), 'tile')} with no {api.dataset_label(self.dataset)} "
+                        "data.",
                         Qgis.MessageLevel.Info, ", ".join(unavailable))
         if not tile_names:
             return
@@ -1704,7 +1779,7 @@ class LidarDownloader:
         targets = {t: self.target_for(t) for t in tile_names}
         unknown = [t for t, target in targets.items() if target is None]
         if unknown:
-            self.notify(f"Skipping {len(unknown)} tile(s): couldn't check which surveys cover them yet. "
+            self.notify(f"Skipping {plural(len(unknown), 'tile')}: couldn't check which surveys cover them yet. "
                         "Try again in a moment.", Qgis.MessageLevel.Warning, ", ".join(unknown))
             tile_names = [t for t in tile_names if targets[t] is not None]
             if not tile_names:
@@ -1803,8 +1878,8 @@ class LidarDownloader:
 
     @staticmethod
     def delete_zips():
-        """Whether zips are deleted once extracted (set in My downloads)."""
-        return QSettings().value(SETTINGS_KEY_DELETE_ZIPS, False, type=bool)
+        """Whether zips are deleted once extracted (set in My downloads; on to start with since 0.15)."""
+        return QSettings().value(SETTINGS_KEY_DELETE_ZIPS, True, type=bool)
 
     def show_downloads(self):
         if self.downloads_dialog is None:
@@ -1871,11 +1946,12 @@ class LidarDownloader:
         using = [layer for layer in QgsProject.instance().mapLayers().values()
                  if os.path.exists(layer.source().split('|')[0])
                  and os.path.normcase(os.path.abspath(layer.source().split('|')[0])).startswith(inside)]
-        note = (f"\n\n{len(using)} layer(s) in this project use these files and will be removed from the project."
+        note = (f"\n\n{plural(len(using), 'layer')} in this project {'uses' if len(using) == 1 else 'use'} "
+                "these files and will be removed from the project."
                 if using else "")
         choice = ask_choice(
             self.downloads_dialog, "Delete Download",
-            f"Permanently delete {api.dataset_label(dataset)}: {len(tiles)} tile(s), {format_bytes(size)}?",
+            f"Permanently delete {api.dataset_label(dataset)}: {plural(len(tiles), 'tile')}, {format_bytes(size)}?",
             f"This deletes the folder {folder} and everything in it: the tiles, their zips, and the mosaics "
             "and point cloud indexes made from them. Files are not moved to the Recycle Bin, but the tiles can be "
             f"downloaded again.{note}",
@@ -1892,7 +1968,8 @@ class LidarDownloader:
             self.notify(f"Couldn't delete {folder}: {e}", Qgis.MessageLevel.Critical)
             return
         if errors:
-            self.notify(f"Deleted {format_bytes(freed)}; {len(errors)} file(s) couldn't be deleted (in use?).",
+            self.notify(f"Deleted {format_bytes(freed)}; {plural(len(errors), 'file')} couldn't be deleted "
+                        "(in use?).",
                         Qgis.MessageLevel.Warning, "\n".join(f"{p}: {e}" for p, e in errors))
         else:
             self.notify(f"Deleted {api.dataset_label(dataset)}: {format_bytes(freed)} freed.",
@@ -1916,23 +1993,27 @@ class LidarDownloader:
         redundant, kept = storage.find_redundant_zips(download_dir)
         kept_text = ""
         if kept:
-            kept_text = (f"\n\nThese {len(kept)} zip file(s) will NOT be touched, because their tiles "
-                         f"aren't fully extracted:\n{storage.format_file_list(kept, 5, download_dir)}")
+            kept_text = (("\n\nThis zip file will NOT be touched, because its tile isn't fully extracted:"
+                          if len(kept) == 1 else f"\n\nThese {len(kept)} zip files will NOT be touched, because "
+                          "their tiles aren't fully extracted:")
+                         + f"\n{storage.format_file_list(kept, 5, download_dir)}")
         if not redundant:
+            left = "isn't fully extracted and was" if len(kept) == 1 else "aren't fully extracted and were"
             self.notify(f"No zip files to delete: no fully extracted tiles have a zip in {download_dir}."
-                        + (f" {len(kept)} zip file(s) aren't fully extracted and were left alone." if kept else ""),
+                        + (f" {plural(len(kept), 'zip file')} {left} left alone." if kept else ""),
                         Qgis.MessageLevel.Info)
             return
 
         size_mb = sum(size for _, _, size in redundant) / 1e6
         choice = ask_choice(
             self.dock, "Permanently Delete Zip Files?",
-            f"Permanently delete {len(redundant)} zip file(s) ({format_size(size_mb)}) from:\n{download_dir}",
+            f"Permanently delete {plural(len(redundant), 'zip file')} ({format_size(size_mb)}) from:\n"
+            f"{download_dir}",
             f"{storage.format_file_list(redundant, base_dir=download_dir)}\n\n"
             "These files will be permanently deleted, not moved to the Recycle Bin. "
             "You can download the tiles again if you need the zips.\n\n"
             f"The tiles are fully extracted: their rasters are kept and still count as downloaded.{kept_text}",
-            [f"Permanently delete {len(redundant)} zip file(s)"],
+            [f"Permanently delete {plural(len(redundant), 'zip file')}"],
             warning=True,
             details="\n".join(path for _, path, _ in redundant))
         if choice is None:
@@ -1949,10 +2030,11 @@ class LidarDownloader:
         self.update_selection_label()
         done = len(redundant) - len(failed)
         if failed:
-            self.notify(f"{done} zip file(s) deleted; {len(failed)} could not be deleted.",
+            self.notify(f"{plural(done, 'zip file')} deleted; {len(failed)} could not be deleted.",
                         Qgis.MessageLevel.Warning, "\n".join(failed))
         else:
-            self.notify(f"{done} zip file(s) deleted, freeing {format_size(size_mb)}.", Qgis.MessageLevel.Success)
+            self.notify(f"{plural(done, 'zip file')} deleted, freeing {format_size(size_mb)}.",
+                        Qgis.MessageLevel.Success)
 
     def cancel_download(self):
         if self.task is not None:
@@ -1994,13 +2076,13 @@ class LidarDownloader:
 
         parts = []
         if succeeded:
-            parts.append(f"Downloaded {len(succeeded)} tile(s).")
+            parts.append(f"Downloaded {plural(len(succeeded), 'tile')}.")
         for message, tiles in unanswered.items():
-            parts.append(f"{len(tiles)} tile(s) not downloaded. {message}")
+            parts.append(f"{plural(len(tiles), 'tile')} not downloaded. {message}")
         if other_failures:
             parts.append(f"{other_failures} failed.")
         if not completed and not_done:
-            parts.append(f"Cancelled: {len(not_done)} tile(s) not downloaded.")
+            parts.append(f"Cancelled: {plural(len(not_done), 'tile')} not downloaded.")
         text = " ".join(parts) or "Nothing to do."
 
         if failed:
@@ -2083,6 +2165,8 @@ class LidarDownloader:
             group = QgsProject.instance().layerTreeRoot().findGroup(group_name)
             if group is not None and kind == api.RASTER and api.is_elevation(dataset.product):
                 self.fit_group_colours(group)
+        if outcome.converting:
+            note = f"{note} {self.convert_point_clouds(outcome.converting)}".strip()
         self.report_load(outcome, crop, crop_note, missing, note)
         return outcome
 
@@ -2091,7 +2175,8 @@ class LidarDownloader:
         came as one file of its own is that file; one that came as several (aerial photos, Wales' 1 km grids), or as
         part of a 10 km file, is a VRT joining them into the 5 km tile, trimmed to its square (photos reach over its
         edges). A VRT only reads the files: the downloads themselves aren't changed. Point clouds: the tile's file, or
-        a virtual point cloud of its files. Tiles already in the project are left as they are."""
+        a virtual point cloud of its files' COPC copies (made the first time, in the background: outcome.converting).
+        Tiles already in the project are left as they are."""
         done = {}  # {path: in the project}: a 10 km square's point cloud serves up to four tiles, added once
         for tile, (folder, rasters, clouds, photos) in sorted(tiles.items()):
             sources = []  # [(path, layer name, provider)]
@@ -2107,6 +2192,9 @@ class LidarDownloader:
             if photos:
                 sources.append((self.photo_points_path(folder, tile), f"{tile} photos", 'photos'))
             for path, name, provider in sources:
+                if provider == 'convert':  # (several point cloud files, not converted to COPC yet)
+                    outcome.converting.append((tile, folder, clouds, name, group_name, dataset))
+                    continue
                 key = os.path.normcase(path)
                 if key not in done:
                     if self.loaded_layer_for(path) is not None:  # (checked before opening: point clouds are slow)
@@ -2135,20 +2223,94 @@ class LidarDownloader:
 
     @staticmethod
     def tile_cloud_sources(tile, folder, files):
-        """[(path, layer name, provider)] for a tile's point clouds: its file, or a virtual point cloud joining its
-        files (QGIS 3.32+ with PDAL; without, each file, named after it). A 10 km square's file is named after the
-        square: point clouds can't be trimmed to the tile without being copied."""
+        """[(path, layer name, provider)] for a tile's point clouds: its file, or a virtual point cloud of COPC copies
+        of its files (QGIS 3.44+ with PDAL; before, each file, named after it): provider 'convert' if they're still
+        to make (see pointclouds). A 10 km square's file is named after the square: point clouds can't be trimmed
+        to the tile without being copied."""
         own = os.path.normcase(storage.extract_path(folder, tile)) + os.sep
         name = tile if any(os.path.normcase(f).startswith(own) for f in files) else tile[:4]
         if len(files) == 1:
             return [(files[0], name, 'pdal')]
-        if not pointclouds.available():
+        if not pointclouds.can_convert():  # (QGIS 3.32 to 3.42: a layer per file, which QGIS indexes itself)
             return [(f, os.path.splitext(os.path.basename(f))[0], 'pdal') for f in files]
-        path = os.path.join(folder, 'mosaics', f'{name}_{postprocess.file_key(files)}.vpc')
-        if not os.path.exists(path):
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            pointclouds.build_vpc(files, path)
-        return [(path, name, 'vpc')]
+        path = pointclouds.vpc_path(folder, name)
+        return [(path, name, 'vpc' if pointclouds.vpc_ready(folder, name, files) else 'convert')]
+
+    def convert_point_clouds(self, jobs):
+        """Point cloud tiles of several files, loaded for the first time: QGIS draws the points of a virtual point
+        cloud only from COPC files, so each tile's files are converted to COPC copies and its VPC is built over
+        them, with an overview (pointclouds.build_tile_vpc; the downloads are kept as they are). That takes a while
+        for a big tile, so it runs in the background, and each tile's layer is added when it's ready (replacing a
+        layer of its VPC from before 0.15, which only showed outlines). jobs: outcome.converting. Returns what to
+        say about it."""
+        if self.cloud_task is not None:
+            return "Point clouds are being converted already: load these tiles again when that's finished."
+        names = sorted({name for _, _, _, name, _, _ in jobs})
+        count = sum(len(files) for _, _, files, _, _, _ in jobs)
+        old = {name: pointclouds.old_vpcs(folder, name) for _, folder, _, name, _, _ in jobs}
+        selection = set(self.grid.selected_tile_names()) if self.grid is not None else set()
+
+        def work(task):
+            built, failed = [], []
+            for index, (tile, folder, files, name, group_name, dataset) in enumerate(jobs):
+                def progress(fraction, index=index):
+                    task.setProgress(100 * (index + fraction) / len(jobs))
+                    return not task.isCanceled()
+                try:
+                    path = pointclouds.build_tile_vpc(folder, name, files, progress)
+                except Exception as e:  # (the disk space, a PDAL tool's error): say so, and carry on
+                    failed.append((f"{name}: {e}", None if isinstance(e, pointclouds.NoSpace) else
+                                   (files, group_name, dataset)))
+                    continue
+                if path is None:  # cancelled
+                    break
+                built.append((path, name, group_name, dataset))
+            return built, failed
+
+        def done(exception, result=None):
+            self.cloud_task = None
+            if self.dock is None:
+                return
+            self.set_status('')
+            built, failed = result if exception is None and result else ([], [(str(exception or 'cancelled'), None)])
+            outcome = LoadOutcome()
+            for path, name, group_name, dataset in built:
+                stale = [layer.id() for vpc in old.get(name, []) for layer in self.loaded_layers_for(vpc)]
+                QgsProject.instance().removeMapLayers(stale)
+                if self.loaded_layer_for(path) is None:
+                    self.add_layer(QgsPointCloudLayer(path, name, 'vpc'), self.layer_group(group_name), dataset,
+                                   api.POINT_CLOUD, outcome)
+            text = (f"Added {plural(outcome.added, 'point cloud layer')}: {', '.join(n for _, n, _, _ in built)}, "
+                    "converted to COPC (in the dataset's vpc folder)." if outcome.added else "")
+            # Tiles that couldn't be converted (not for want of space): a layer per file, which QGIS indexes itself
+            separate = 0
+            for _, job in failed:
+                if job is not None:
+                    files, group_name, dataset = job
+                    for path in files:
+                        if self.loaded_layer_for(path) is None:
+                            name = os.path.splitext(os.path.basename(path))[0]
+                            separate += self.add_layer(QgsPointCloudLayer(path, name, 'pdal'),
+                                                       self.layer_group(group_name), dataset, api.POINT_CLOUD, outcome)
+            if separate:
+                text += f" Loaded {plural(separate, 'point cloud file')} as separate layers instead."
+            if failed or outcome.failed:
+                self.notify(f"{text} Couldn't convert the point clouds of "
+                            f"{plural(len(failed), 'tile')}.".strip(), Qgis.MessageLevel.Warning,
+                            "\n".join([message for message, _ in failed] + outcome.failed))
+            elif text:
+                self.notify(text, Qgis.MessageLevel.Success)
+            if outcome.added:
+                self.deselect_after_loading(selection)
+
+        self.cloud_task = QgsTask.fromFunction("LIDAR Downloader UK: converting point clouds to COPC", work,
+                                               on_finished=done)
+        self.set_status(f"Converting {plural(count, 'point cloud file')} to COPC...")
+        QgsApplication.taskManager().addTask(self.cloud_task)
+        one = len(names) == 1
+        return (f"{', '.join(names)}: converting {'its' if one else 'their'} {plural(count, 'point cloud file')} to "
+                "COPC, a cloud-optimised copy QGIS can draw as one layer (the first time only; the downloads are "
+                f"kept as they are). {'It is' if one else 'They are'} added when that's done.")
 
     def load_cropped(self, group_name, dataset, kind, tiles, crop, outcome):
         """With "Crop to" ticked: the tiles under the area (crop: (its name, GeoJSON)) as one layer, their files made
@@ -2191,6 +2353,7 @@ class LidarDownloader:
         if isinstance(layer, QgsPointCloudLayer):
             pointclouds.ensure_crs(layer)
             pointclouds.style_classified(layer)
+            pointclouds.show_overview(layer)
         elif kind == api.IMAGERY and not api.black_is_data(dataset.product):
             self.hide_black_borders(layer)
         if elevation:
@@ -2239,7 +2402,7 @@ class LidarDownloader:
 
     def report_load(self, outcome, crop, crop_note, missing, note=''):
         """Say what a "Load" did, in the message bar."""
-        text = f"Loaded {plural(outcome.added, 'layer')}."
+        text = f"Loaded {plural(outcome.added, 'layer')}." if outcome.added or not outcome.converting else ''
         area = crop[0] if crop else ''
         if outcome.cropped:
             text += f" Cropped to '{area}'."
@@ -2254,7 +2417,7 @@ class LidarDownloader:
         if note:
             text += f" {note}"
         if outcome.clouds and self.dock.chkCrop.isChecked():
-            text += " Point clouds load whole: use 'Create mosaic...' to save a cropped copy."
+            text += " Point clouds load whole: they're never cropped."
         if outcome.already:
             text += f" {outcome.already} already in the project."
         if outcome.problems:
@@ -2492,7 +2655,8 @@ class LidarDownloader:
             what = f"Created {os.path.basename(path)}" + (
                 " (it was already loaded, so it was refreshed)." if already else ".")
         if missing:
-            self.notify(f"{what} {len(missing)} selected tile(s) not downloaded yet were left out.",
+            self.notify(f"{what} {plural(len(missing), 'selected tile')} not downloaded yet "
+                        f"{'was' if len(missing) == 1 else 'were'} left out.",
                         Qgis.MessageLevel.Warning, ", ".join(missing))
         else:
             self.notify(what, Qgis.MessageLevel.Success)

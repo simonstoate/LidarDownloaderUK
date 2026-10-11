@@ -26,8 +26,8 @@ sys.path.insert(0, os.path.dirname(TEST_DIR))  # repo root, for the lidar_downlo
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from qgis.core import (  # noqa: E402
-    Qgis, QgsApplication, QgsCoordinateReferenceSystem, QgsExpression, QgsFeature, QgsGeometry, QgsPointXY,
-    QgsProject, QgsRectangle, QgsVectorLayer)
+    Qgis, QgsApplication, QgsCoordinateReferenceSystem, QgsExpression, QgsExpressionContext,
+    QgsExpressionContextScope, QgsFeature, QgsGeometry, QgsPointXY, QgsProject, QgsRectangle, QgsVectorLayer)
 from qgis.gui import QgsMapCanvas  # noqa: E402
 from qgis.PyQt.QtCore import QCoreApplication, QObject, QSettings, QT_VERSION_STR, pyqtSignal  # noqa: E402
 from qgis.PyQt.QtWidgets import QMainWindow  # noqa: E402
@@ -43,7 +43,7 @@ from processing.core.Processing import Processing  # noqa: E402
 Processing.initialize()
 
 import lidar_downloader_uk as pkg  # noqa: E402
-from lidar_downloader_uk import lidar_downloader as mod, storage, tasks  # noqa: E402
+from lidar_downloader_uk import grid as gridmod, lidar_downloader as mod, storage, tasks  # noqa: E402
 
 failures = []
 
@@ -431,6 +431,9 @@ def main():
         plugin.initGui()
         dock = plugin.dock
         check(dock.leDownloadDir.text() == tmp, "download folder filled in from settings when the plugin starts")
+        check(QSettings().contains(mod.SETTINGS_KEY_DELETE_ZIPS) and not plugin.delete_zips()
+              and not plugin.show_tip, "someone who used the plugin before keeps their zips, as before 0.15, "
+              "and isn't shown the first-time tip")
         DTM = os.path.join(tmp, 'lidar_composite_dtm', '1m', '2022')  # where the default dataset now lives
         check(dock is not None and len(plugin.actions) == 1, "initGui creates dock + action")
         icon_image = plugin.actions[0].icon().pixmap(24, 24).toImage()
@@ -498,6 +501,25 @@ def main():
         check(outside == "\"HAS_DATA\" = 'f'" and not QgsExpression(outside).hasParserError()
               and 20000 < no_data < 36400,
               f"squares without data styled separately ({no_data} of them)")
+
+        def outline_opacity(label, scale):
+            """How opaque (0-255) a grid rule's outlines are drawn at a map scale (a plain value: see
+            style_rules)."""
+            context = QgsExpressionContext()
+            scope = QgsExpressionContextScope()
+            scope.setVariable('map_scale', scale)
+            context.appendScope(scope)
+            for rule in layer.renderer().rootRule().children():
+                if rule.label() == label:
+                    symbol_layer = rule.symbol().symbolLayer(0)
+                    colour, _ = symbol_layer.dataDefinedProperties().valueAsColor(
+                        gridmod.STROKE_COLOR, context, symbol_layer.strokeColor())
+                    return colour.alpha()
+            return None
+
+        check(outline_opacity('Available', 500000) == 255 and outline_opacity('Available', 2000000) < 200
+              and outline_opacity('Available', 5000000) == 30 and outline_opacity('No data', 5000000) == 0,
+              "zoomed out beyond 1:1,000,000 the grid's outlines fade (no black block at national scale)")
         check(layer.labelsEnabled() and layer.labeling().settings().fieldName == 'TILE_NAME'
               and layer.labeling().settings().scaleVisibility, "grid labelled with tile names (scale-limited)")
         plugin.grid.load()
@@ -568,11 +590,11 @@ def main():
         check(plugin.task is not None and dock.btnCancel.isEnabled() and not dock.btnDownloadTiles.isEnabled()
               and not dock.btnLoadSelected.isEnabled(), "download runs as background task; UI busy")
         check(wait_for_task(plugin), "task finishes")
-        check(any("Skipping 1 tile(s) with no" in m[0] and "NT27NE" in (m[2] or '') for m in msgs),
+        check(any("Skipping 1 tile with no" in m[0] and "NT27NE" in (m[2] or '') for m in msgs),
               "a tile without the dataset is skipped and reported")
         check('NT2575' not in server.requests, "a tile without the dataset is not requested")
         text, level, details = msgs[-1]
-        check("Downloaded 2 tile(s)" in text and "1 failed" in text and level == Qgis.MessageLevel.Warning
+        check("Downloaded 2 tiles." in text and "1 failed" in text and level == Qgis.MessageLevel.Warning
               and "SU12SW: no data available (HTTP 500)" in (details or ''), "message bar summary + failure details")
         check(server.requests.count('SU1025') == 2, "503 is retried")
         check(server.requests.count('SU1020') == 1, "500 (no data) is not retried")
@@ -613,7 +635,7 @@ def main():
         plugin.download_selected_tiles()
         wait_for_task(plugin)
         text, level, details = msgs[-1] if msgs else ('', None, None)
-        check(text.startswith("5 tile(s) not downloaded. The Environment Agency's survey data service isn't responding")
+        check(text.startswith("5 tiles not downloaded. The Environment Agency's survey data service isn't responding")
               and "Try again later" in text and "failed" not in text and level == Qgis.MessageLevel.Warning
               and "network error" in (details or ''), "a service that doesn't answer: one plain message naming it")
         check(len(server.requests) < 15, f"... tiles after the service stopped answering aren't all tried "
@@ -665,7 +687,7 @@ def main():
         wait_for_task(plugin)
         check(not os.path.exists(os.path.join(DTM, 'SU22NW.zip'))
               and os.path.exists(os.path.join(DTM, 'SU22NW', 'SU22nw_DTM_1m.asc'))
-              and "Downloaded 1 tile(s)" in msgs[-1][0], "zip deleted after successful extraction")
+              and "Downloaded 1 tile." in msgs[-1][0], "zip deleted after successful extraction")
         select('SU22NW', 'SU12NE')
         check("2 downloaded" in dock.lblTileCount.text(), "tile without zip still counts as downloaded")
         server.requests.clear()
@@ -673,7 +695,7 @@ def main():
         msgs.clear()
         plugin.download_selected_tiles()
         wait_for_task(plugin)
-        check(server.requests == [] and msgs and "Downloaded 2 tile(s)" in msgs[-1][0],
+        check(server.requests == [] and msgs and "Downloaded 2 tiles." in msgs[-1][0],
               "re-using a tile whose zip was deleted works without downloading")
         check(not os.path.exists(os.path.join(DTM, 'SU12NE.zip'))
               and storage.find_raster_files(DTM, 'SU12NE'), "re-using a tile tidies away its old zip")
@@ -688,7 +710,7 @@ def main():
         check(os.path.exists(os.path.join(DTM, 'SU12NW.zip')), "delete zips: cancel deletes nothing")
         args, kwargs = asked[-1]
         text, informative = args[2], args[3]
-        check(kwargs.get('warning') is True and args[4] == ["Permanently delete 1 zip file(s)"],
+        check(kwargs.get('warning') is True and args[4] == ["Permanently delete 1 zip file"],
               "delete zips: warning dialog, explicit button")
         check(tmp in text and "SU12NW.zip" in informative and "SU32NW.zip" in informative
               and "will NOT be touched" in informative,
@@ -699,12 +721,12 @@ def main():
         msgs.clear()
         plugin.tidy_up_zips()
         check(not os.path.exists(os.path.join(DTM, 'SU12NW.zip')) and os.path.exists(os.path.join(DTM, 'SU32NW.zip'))
-              and storage.find_raster_files(DTM, 'SU12NW') and msgs and msgs[-1][0].startswith("1 zip file(s)"),
+              and storage.find_raster_files(DTM, 'SU12NW') and msgs and msgs[-1][0].startswith("1 zip file deleted"),
               "delete zips removes only fully extracted zips")
         msgs.clear()
         plugin.tidy_up_zips()
         check(msgs and "No zip files to delete" in msgs[-1][0]
-              and "1 zip file(s) aren't fully extracted" in msgs[-1][0],
+              and "1 zip file isn't fully extracted and was left alone" in msgs[-1][0],
               "delete zips with nothing to do says so")
         os.remove(os.path.join(DTM, 'SU32NW.zip'))
 
@@ -1609,15 +1631,25 @@ def main():
             wait_for_geocode(plugin)
             return sorted(plugin.grid.selected_tile_names())
 
-        check(go('SU 14 27') == ['SU12NW'] and msgs and 'added 1 tile' in msgs[-1][0]
+        check(go('SU 14 27') == ['SU12NW'] and msgs and 'selected 1 tile.' in msgs[-1][0]
               and canvas.extent().contains(QgsRectangle(414000, 127000, 415000, 128000)),
-              "go to a grid reference: zooms there and adds its tile")
-        check(go('su12') == ['SU12NE', 'SU12NW', 'SU12SE', 'SU12SW'], "go to a 10 km square: adds its four tiles")
+              "go to a grid reference: zooms there and selects its tile")
+        check(go('su12') == ['SU12NE', 'SU12NW', 'SU12SE', 'SU12SW'], "go to a 10 km square: selects its four tiles")
         check(go('SU12NE') == ['SU12NE'], "go to a tile name")
         check(go('SU') == [] and msgs and 'none were selected' in msgs[-1][0],
               "go to a 100 km square: zooms, but doesn't select 400 tiles")
         check(go('600000, 1000000') == [] and msgs and msgs[-1][1] == Qgis.MessageLevel.Warning,
               "go to somewhere without data (the North Sea): says so")
+        # The grid's has-data flag is a snapshot from when it was built: a square a search finds data for (a survey
+        # published since) counts as having data: not drawn faintly, and Go to (or a box) selects it
+        sea = mod.places.tile_at(600000, 1000000)
+        plugin.record_offerings([sea], [mod.api.Offering(mod.api.DEFAULT_DATASET, sea, sea, f'{mod.api.BASE_URL}/x')])
+        plugin.refresh_grid_style()
+        outside = style_rules(plugin.grid.layer()).get('No data', ('', False, None))[0]
+        check(plugin.grid.known_data == {sea} and f"NOT IN ('{sea}')" in outside and go('600000, 1000000') == [sea],
+              "a square found to have data since the grid was built counts as having it (not faint; Go to selects it)")
+        plugin.offerings_by_tile.pop(sea, None)
+        plugin.searched_tiles.discard(sea)
         server.geocode = {'SP1': (200, {'status': 200, 'result': {
             'postcode': 'SP1 3QQ', 'eastings': 417500, 'northings': 127500, 'admin_district': 'Wiltshire'}})}
         check(go('sp1 3qq') == ['SU12NE'] and 'postcodes/SP1' in server.geocode_urls[-1],
@@ -1632,6 +1664,17 @@ def main():
             chosen = go('Salisbury')
         check(chooser.call_args and chooser.call_args[0][1][1] == 'Salisbury Plain (Other, Wiltshire)'
               and chosen == ['SU12NE', 'SU12SE'], "several places: offers a list; the chosen place's area is selected")
+        select('SU22NW')
+        dock.leGoTo.setText('SU12NE')
+        dock.btnGoTo.click()
+        wait_for_geocode(plugin)
+        check(plugin.grid.selected_tile_names() == ['SU12NE'], "Go to replaces the selection")
+        dock.leGoTo.setText('SU')
+        msgs.clear()
+        dock.btnGoTo.click()
+        wait_for_geocode(plugin)
+        check(plugin.grid.selected_tile_names() == [] and msgs and 'none were selected' in msgs[-1][0],
+              "... and clears it where there are too many tiles to select")
         server.geocode = {'places': (200, {'status': 200, 'result': []})}
         check(go('Nowhere') == [] and msgs and 'Nothing found' in msgs[-1][0], "place not found: says so")
         server.geocode = {'places': (503, {})}
@@ -1717,6 +1760,114 @@ def main():
             select('SU12NE', 'SU12NW')
             check(not mosaic_offered(), "point clouds: no temporary mosaic after downloading either")
 
+            # A tile of several files: QGIS draws a virtual point cloud's points only from COPC files, so the first
+            # load converts them to COPC copies (in the background) and builds the VPC over them, with an overview,
+            # in the dataset's vpc folder; the downloads are kept as they are
+            from qgis.core import QgsMapRendererParallelJob, QgsMapSettings
+            from qgis.PyQt.QtCore import QSize
+            from qgis.PyQt.QtGui import QColor
+            cloud_dir = os.path.join(tmp, 'lidar_point_cloud', '2015')
+            several = os.path.join(cloud_dir, 'SU12SE')
+            os.makedirs(several, exist_ok=True)
+            for part in ('a', 'b'):
+                write_las(os.path.join(several, f'SU12SE_P_{part}_20150101.las'), 'SU12SE', spacing=100)
+            if mod.pointclouds.can_convert():  # (QGIS 3.44+)
+                stale = os.path.join(cloud_dir, 'mosaics', 'SU12SE_0123456789.vpc')  # as 0.14.6 made it: outlines only
+                os.makedirs(os.path.dirname(stale), exist_ok=True)
+                with open(stale, 'w', encoding='utf-8') as fh:
+                    fh.write('{}')
+                select('SU12SE')
+                msgs.clear()
+                plugin.load_selected_tiles()
+                started = (plugin.cloud_task is not None and msgs
+                           and 'SU12SE: converting its 2 point cloud files to COPC' in msgs[-1][0])
+                end = time.monotonic() + 180
+                while plugin.cloud_task is not None and time.monotonic() < end:
+                    app.processEvents()
+                    time.sleep(0.05)
+                app.processEvents()
+                vpc = os.path.join(cloud_dir, 'vpc', 'SU12SE.vpc')
+                copc_dir = os.path.join(cloud_dir, 'vpc', 'copc')
+                layers = [lyr for lyr in QgsProject.instance().mapLayers().values()
+                          if isinstance(lyr, mod.QgsPointCloudLayer) and lyr.name() == 'SU12SE']
+                vpc_text = open(vpc, encoding='utf-8').read() if os.path.exists(vpc) else ''
+                check(started and len(layers) == 1 and os.path.normcase(layers[0].source()) == os.path.normcase(vpc)
+                      and layers[0].dataProvider().name() == 'vpc'
+                      and sorted(os.listdir(copc_dir) if os.path.isdir(copc_dir) else [])
+                      == ['SU12SE_P_a_20150101.copc.laz', 'SU12SE_P_b_20150101.copc.laz']
+                      and os.path.exists(os.path.join(cloud_dir, 'vpc', 'SU12SE-overview.copc.laz'))
+                      and './copc/SU12SE_P_a_20150101.copc.laz' in vpc_text and '\\\\' not in vpc_text
+                      and sorted(os.listdir(several)) == ['SU12SE_P_a_20150101.las', 'SU12SE_P_b_20150101.las']
+                      and not os.path.exists(stale) and msgs and 'Added 1 point cloud layer: SU12SE' in msgs[-1][0],
+                      "a tile of several point cloud files: converted to COPC in the background, then one layer (a "
+                      "VPC of the copies, with an overview, in the dataset's vpc folder; the downloads kept as they "
+                      "are; the 0.14.6 VPC gone)")
+                if layers:  # QGIS draws the points (zoomed in closer than a file is wide, as the map canvas loads them)
+                    provider = layers[0].dataProvider()
+                    for i in range(len(provider.subIndexes())):
+                        provider.loadSubIndex(i)
+                    settings = QgsMapSettings()
+                    settings.setLayers([layers[0]])
+                    settings.setDestinationCrs(layers[0].crs())
+                    settings.setOutputSize(QSize(200, 200))
+                    settings.setExtent(QgsRectangle(416000, 121500, 418000, 123500))
+                    settings.setBackgroundColor(QColor('white'))
+                    drawn, end = 0, time.monotonic() + 20
+                    while drawn <= 100 and time.monotonic() < end:  # (the points arrive in the background)
+                        job = QgsMapRendererParallelJob(settings)
+                        job.start()
+                        job.waitForFinished()
+                        image = job.renderedImage()
+                        drawn = sum(1 for x in range(0, 200, 2) for y in range(0, 200, 2)
+                                    if image.pixelColor(x, y) != QColor('white'))
+                        app.processEvents()
+                        time.sleep(0.05)
+                    check(drawn > 100, f"... and QGIS draws its points ({drawn} pixels sampled), not just the files' "
+                                       "outlines")
+                    if hasattr(layers[0].renderer(), 'zoomOutBehavior'):  # (QGIS 3.36+)
+                        check(layers[0].renderer().zoomOutBehavior()
+                              == Qgis.PointCloudZoomOutRenderBehavior.RenderOverview,
+                              "... and zoomed out, its overview (thinned points), not QGIS's default of the files' "
+                              "outlines")
+                layers = provider = None
+                select('SU12SE')
+                msgs.clear()
+                plugin.load_selected_tiles()
+                check(plugin.cloud_task is None and msgs and 'already in the project' in msgs[-1][0],
+                      "... converted once: loading it again doesn't convert anything")
+
+                # If a conversion fails (here, a copy that isn't COPC), the tile loads as a layer per file instead
+                QgsProject.instance().removeMapLayers([lyr.id() for lyr in QgsProject.instance().mapLayers().values()
+                                                       if lyr.name() == 'SU12SE'])
+                shutil.rmtree(os.path.join(cloud_dir, 'vpc'))
+                select('SU12SE')
+                msgs.clear()
+                with mock.patch.object(mod.pointclouds, 'is_copc', return_value=False):
+                    plugin.load_selected_tiles()
+                    end = time.monotonic() + 180
+                    while plugin.cloud_task is not None and time.monotonic() < end:
+                        app.processEvents()
+                        time.sleep(0.05)
+                app.processEvents()
+                separate = [lyr for lyr in QgsProject.instance().mapLayers().values()
+                            if isinstance(lyr, mod.QgsPointCloudLayer) and lyr.name().startswith('SU12SE')]
+                check(sorted(lyr.name() for lyr in separate) == ['SU12SE_P_a_20150101', 'SU12SE_P_b_20150101']
+                      and msgs and 'as separate layers instead' in msgs[-1][0]
+                      and "didn't convert" in (msgs[-1][2] or '')
+                      and not os.path.exists(os.path.join(cloud_dir, 'vpc', 'SU12SE.vpc')),
+                      "if converting fails, the tile loads as a layer per file instead (QGIS indexes each), saying why")
+                QgsProject.instance().removeMapLayers([lyr.id() for lyr in separate])
+                separate = None
+            else:  # QGIS 3.32 to 3.42: its PDAL tools can't write COPC
+                select('SU12SE')
+                plugin.load_selected_tiles()
+                names = sorted(lyr.name() for lyr in QgsProject.instance().mapLayers().values()
+                               if isinstance(lyr, mod.QgsPointCloudLayer) and lyr.name().startswith('SU12SE'))
+                check(plugin.cloud_task is None and names == ['SU12SE_P_a_20150101', 'SU12SE_P_b_20150101']
+                      and not os.path.exists(os.path.join(cloud_dir, 'vpc')),
+                      "before QGIS 3.44 a tile of several point cloud files loads as a layer per file (QGIS indexes "
+                      "each itself)")
+
             # Never joined into a mosaic or cropped, even with "Crop to" ticked: no save dialog, nothing made
             patch = QgsVectorLayer('Polygon?crs=EPSG:27700', 'patch', 'memory')
             feature = QgsFeature()
@@ -1767,7 +1918,7 @@ def main():
         msgs.clear()
         plugin.download_selected_tiles()
         check(isinstance(plugin.task, mod.ParallelDownloadTask), "several tiles download in parallel")
-        check(wait_for_task(plugin) and msgs and "Downloaded 3 tile(s)" in msgs[-1][0]
+        check(wait_for_task(plugin) and msgs and "Downloaded 3 tiles." in msgs[-1][0]
               and sorted(server.requests) == ['SU1025', 'SU1525', 'SU2025'] and server.max_active >= 2,
               f"tiles downloaded at the same time ({server.max_active} at once), all reported")
         server.delay = 0
@@ -1838,7 +1989,7 @@ def main():
         dialog.btnDelete.click()
         app.processEvents()
         labels = [dialog.tree.topLevelItem(i).text(0) for i in range(dialog.tree.topLevelItemCount())]
-        check(asked and asked[-1][1].get('warning') and '1 layer(s) in this project' in asked[-1][0][3]
+        check(asked and asked[-1][1].get('warning') and '1 layer in this project uses these files' in asked[-1][0][3]
               and not os.path.exists(os.path.join(tmp, 'lidar_tiles_dsm'))
               and QgsProject.instance().mapLayer(spare_id) is None
               and 'England DSM (individual surveys), 2011, 1 m' not in labels,
@@ -1920,7 +2071,7 @@ def main():
         server.file_requests.clear()
         msgs.clear()
         plugin.download_selected_tiles()
-        check(wait_for_task(plugin) and msgs and 'Downloaded 1 tile(s)' in msgs[-1][0], "Welsh tile downloaded")
+        check(wait_for_task(plugin) and msgs and 'Downloaded 1 tile.' in msgs[-1][0], "Welsh tile downloaded")
         wales_dir = os.path.join(tmp, 'wales_lidar_dtm', '1m', '2020-2022')
         wales_files = storage.find_raster_files(wales_dir, 'SH28SW')
         check(len(wales_files) == 10 and len(server.file_requests) == 10,
@@ -1935,7 +2086,7 @@ def main():
         plugin.download_selected_tiles()
         wait_for_task(plugin)
         check(asked and asked[-1][0][1] == 'Already Downloaded' and server.file_requests == []
-              and msgs and 'Downloaded 1 tile(s)' in msgs[-1][0], "files already downloaded aren't fetched again")
+              and msgs and 'Downloaded 1 tile.' in msgs[-1][0], "files already downloaded aren't fetched again")
         select('SH28SW')
         plugin.load_selected_tiles()
         wales_group = root.findGroup(mod.api.dataset_label(mod.api.Dataset(*wales_dtm)))
@@ -1956,6 +2107,36 @@ def main():
         wales_layers = joined = None
         root.removeChildNode(wales_group)
         wales_group = None
+        # Survey dates for a Welsh tile: when each 1 km square was flown, from DataMapWales' tile catalogue, saved
+        # beside the tile's files the first time
+        select('SH28SW')
+        msgs.clear()
+        check(dock.btnSurveyDates.isEnabled(), "Survey dates can be switched on for a downloaded Welsh tile")
+        dock.btnSurveyDates.click()
+        welsh_dates = QgsProject.instance().mapLayersByName('SH28SW survey dates')
+        dates_file = os.path.join(wales_dir, 'SH28SW', 'SH28SW_survey_dates.geojson')
+        dated = welsh_dates[0] if len(welsh_dates) == 1 else None
+        values = sorted((f['SRVY_YEAR'], f['FLOWN'], f['SRVY_TYPE'], round(f.geometry().area()))
+                        for f in dated.getFeatures()) if dated else []
+        check(dated is not None and os.path.normcase(dated.source()) == os.path.normcase(dates_file)
+              and values == [(2020, '22 Mar 2020', 'Welsh Government national', 6000000),
+                             (2022, '19 Mar 2022', 'Welsh Government national', 4000000)]
+              and [c.label() for c in dated.renderer().categories()] == ['2020', '2022']
+              and 'FLOWN' in dated.mapTipTemplate() and storage.find_raster_files(wales_dir, 'SH28SW') == wales_files,
+              "Welsh survey dates: each day's squares as one area, coloured by year, the date in the map tip; "
+              f"saved beside the tile's files (and not taken for data) {values}")
+        dated = welsh_dates = None
+        select('SH28SW')
+        dock.btnSurveyDates.click()  # off
+        searched = plugin.offerings_by_tile.pop('SH28SW', None)  # (as if offline: the saved file is read)
+        select('SH28SW')
+        dock.btnSurveyDates.click()
+        check(len(QgsProject.instance().mapLayersByName('SH28SW survey dates')) == 1,
+              "... and shown again from the saved file, with or without the catalogue")
+        if searched is not None:
+            plugin.offerings_by_tile['SH28SW'] = searched
+        select('SH28SW')
+        dock.btnSurveyDates.click()  # off
 
         # Welsh archive surveys: NRW published them in millimetres (..._mm_units.asc). Downloaded as they are, and
         # converted to metres only if the user agrees when loading them
@@ -2015,6 +2196,27 @@ def main():
               and metres_layer is not None and os.path.basename(grids[0]) in vrt_text and '_mm_units' not in vrt_text,
               "'Convert to metres' rewrites them in metres (no data kept; the millimetre file, and its layer, gone) "
               "and loads them")
+        # A grid big enough for overviews (as the download gives them): they go with the millimetre grid, and the
+        # GeoTIFF in metres gets its own (GDAL 3.4+, as for downloads)
+        big_dir = os.path.join(tmp, 'mm_overviews')
+        os.makedirs(big_dir)
+        mem = _gdal.GetDriverByName('MEM').Create('', 1100, 1100, 1, _gdal.GDT_Int32)
+        mem.SetGeoTransform((316000, 0.25, 0, 168275, 0, -0.25))
+        mem.GetRasterBand(1).SetNoDataValue(-9999)
+        mem.GetRasterBand(1).Fill(12345)
+        big = os.path.join(big_dir, 'dtm_F0085398_20070731_20070731_mm_units.asc')
+        _gdal.GetDriverByName('AAIGrid').CreateCopy(big, mem)
+        mem = _gdal.Open(big)
+        mem.BuildOverviews('NEAREST', [2])
+        mem = None
+        had = os.path.exists(big + '.ovr')
+        converted = mod.postprocess.convert_mm_grids(big_dir)
+        out_ds = _gdal.Open(big.replace('_mm_units.asc', '.tif'))
+        own = (out_ds is not None and out_ds.GetRasterBand(1).GetOverviewCount() > 0
+               or not hasattr(_gdal, 'SetThreadLocalConfigOption'))
+        out_ds = None
+        check(had and converted == 1 and not os.path.exists(big) and not os.path.exists(big + '.ovr') and own,
+              "... and the millimetre grid's overviews go with it, the GeoTIFF in metres getting its own")
         archive = grids = values = metres_layer = None
         if root.findGroup(mod.api.dataset_label(archive_dataset)):
             root.removeChildNode(root.findGroup(mod.api.dataset_label(archive_dataset)))
@@ -2075,6 +2277,12 @@ def main():
         mod_tasks._scottish_collections = None
         server.scotland_collections = fixture('scotland_collections.json')
         products = fixture('scotland_products_stirling.json')
+        # The fixture is a search of a corner of NS79SE: a search of the whole square (as the plugin makes) also lists
+        # Phase I's point clouds in its other three tiles, which places its 10 km DTM in all four
+        cloud = next(p for p in products['result'] if p['collectionName'].endswith('phase-1/laz'))
+        for ref in ('NS7095', 'NS7090', 'NS7595'):
+            extra = json.loads(json.dumps(cloud).replace(cloud['properties']['osgbGridRef'], ref))
+            products['result'].append(extra)
         for product in products['result']:
             http = product['data']['product']['http']
             if http['url'].endswith('.tif'):
@@ -2092,11 +2300,20 @@ def main():
         check(entry_for(phase1)[1] is not None
               and entry_for(('scotland_lidar_dtm', '2021-phase-5', '0.5'))[1] is not None,
               "Scottish surveys listed (Phase I, Phase V...)")
+        # Phase V's point clouds are in one square of these (its DTM of NS79SE is almost empty): the menu says how
+        # little it covers, and "newest for each tile" passes it over for Phase IV, which covers them all
+        path, _ = entry_for(('scotland_lidar_dtm', '2021-phase-5', '0.5'))
+        newest = mod.api.pick_offering(plugin.offerings_by_tile.get('NS79SE', []),
+                                       mod.api.Dataset('scotland_lidar_dtm', mod.api.LATEST, ''))
+        check(path and 'covers 1 of 4 km²' in path[-1] and newest is not None
+              and newest.dataset.year == '2017-phase-4',
+              f"a survey covering part of the tiles says how much in the menu ({path[-1] if path else None}), and "
+              "'newest for each tile' passes it over")
         choose(phase1)
         server.file_requests.clear()
         msgs.clear()
         plugin.download_selected_tiles()
-        check(wait_for_task(plugin) and msgs and 'Downloaded 2 tile(s)' in msgs[-1][0], "Scottish tiles downloaded")
+        check(wait_for_task(plugin) and msgs and 'Downloaded 2 tiles.' in msgs[-1][0], "Scottish tiles downloaded")
         scot_dir = os.path.join(tmp, 'scotland_lidar_dtm', '1m', '2011-phase-1')
         check(server.file_requests == [u for u in server.files if u.endswith('NS79_1M_DTM_PHASE1.tif')]
               and os.path.exists(os.path.join(scot_dir, 'NS79', 'NS79_1M_DTM_PHASE1.tif'))
@@ -2356,6 +2573,23 @@ def main():
         dock.chkShowGrid.setChecked(True)
         plugin.unload()
         check(not QgsProject.instance().mapLayersByName("OSGB Grid") and plugin.dock is None, "unload cleans up")
+
+        # --- A new user (no settings saved yet)
+        QSettings().clear()
+        fresh = pkg.classFactory(iface)
+        fresh.initGui()
+        check(fresh.delete_zips() and not QSettings().contains(mod.SETTINGS_KEY_DELETE_ZIPS),
+              "a new user: zips are deleted after extracting, to start with")
+        msgs.clear()
+        del durations[:]
+        with mock.patch.object(fresh, 'resolve_download_dir', return_value=tmp):  # (not Documents/LiDAR Data)
+            fresh.run()
+            fresh.dock.hide()
+            fresh.run()
+        tips = [i for i, m in enumerate(msgs) if m[0] == mod.FIRST_TIP]
+        check(len(tips) == 1 and durations[tips[0]] == 0 and 'Go to' in mod.FIRST_TIP,
+              "... and a tip the first time the panel opens, staying until closed (only that once)")
+        fresh.unload()
     except Exception:
         # To stdout, flushed: the exit below skips flushing, and stderr is buffered on older Pythons (lost in CI)
         traceback.print_exc(file=sys.stdout)

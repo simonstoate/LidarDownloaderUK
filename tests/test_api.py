@@ -271,7 +271,10 @@ class GroupingTest(unittest.TestCase):
         self.assertAlmostEqual(api.download_mb(welsh), 22 * 1.45)
         archive_2m = api.Offering(api.Dataset('wales_lidar_archive_dtm', '1998', '2'), 'ST16NE', 'ST16NE', '', (
             api.FileRef('https://lle.blob.core.windows.net/lidar/2m_res_ST16_1998_dtm.zip', 'a.zip', 'ST16'),))
-        self.assertAlmostEqual(api.download_mb(archive_2m), 42 / 4)
+        self.assertAlmostEqual(api.download_mb(archive_2m), 25)
+        archive_25cm = api.Offering(api.Dataset('wales_lidar_archive_dtm', '2007', '0.25'), 'SN14NE', 'SN14NE', '', (
+            api.FileRef('https://lle.blob.core.windows.net/lidar/25cm_res_SN14_2007_dtm.zip', 'b.zip', 'SN14'),))
+        self.assertAlmostEqual(api.download_mb(archive_25cm), 85)  # measured: 25 cm zips are 0-281 MB, 83 on average
         england = api.Offering(api.DEFAULT_DATASET, 'SU12NE', 'SU1525', f'{api.BASE_URL}/x')
         self.assertEqual(api.download_mb(england), 70)
         self.assertEqual((api.disk_mb(70, True), api.disk_mb(70, True, True), api.disk_mb(32, False)), (140, 70, 32))

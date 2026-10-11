@@ -186,7 +186,7 @@ class DownloadTilesAlgorithm(QgsProcessingAlgorithm):
         overwrite = self.parameterAsBoolean(parameters, self.OVERWRITE, context)
         reuse = set() if overwrite else {t for t in available if storage.is_downloaded(folders[t], t)}
         if reuse:
-            feedback.pushInfo(self.tr('Reusing {} tile(s) already downloaded.').format(len(reuse)))
+            feedback.pushInfo(self.tr('Reusing {} already downloaded.').format(api.plural(len(reuse), 'tile')))
         download = DownloadTilesTask(
             sorted(available), dataset_dir, reuse,
             delete_zips=self.parameterAsBoolean(parameters, self.DELETE_ZIPS, context),
@@ -201,7 +201,7 @@ class DownloadTilesAlgorithm(QgsProcessingAlgorithm):
                   for t, err in sorted(download.results.items()) if err]
         for message in failed:
             feedback.reportError(message, fatalError=False)
-        feedback.pushInfo(self.tr('{} tile(s) ready, {} failed.').format(len(succeeded), len(failed)))
+        feedback.pushInfo(self.tr('{} ready, {} failed.').format(api.plural(len(succeeded), 'tile'), len(failed)))
 
         if self.parameterAsBoolean(parameters, self.CONVERT_MM, context):  # only if asked: it rewrites the files
             for tile in succeeded:
@@ -246,8 +246,8 @@ class DownloadTilesAlgorithm(QgsProcessingAlgorithm):
             raise QgsProcessingException(self.tr("Couldn't check what's available: {}").format(search.error))
         unchecked = sorted(t for t in extents if t[:2] in search.failed_squares)
         if search.error:
-            feedback.pushWarning(self.tr("One of the services didn't answer ({}), so {} tile(s) couldn't be "
-                                         "checked: {}").format(search.error, len(unchecked), ', '.join(unchecked)))
+            feedback.pushWarning(self.tr("One of the services didn't answer ({}), so {} couldn't be checked: {}")
+                                 .format(search.error, api.plural(len(unchecked), 'tile'), ', '.join(unchecked)))
         if not wanted.is_latest:
             year, choices = api.resolve_year(wanted.product, wanted.year, [o.dataset for o in search.offerings])
             if year is None and len(choices) > 1:
@@ -264,15 +264,17 @@ class DownloadTilesAlgorithm(QgsProcessingAlgorithm):
         available = {t: o for t, o in chosen.items() if o}
         unavailable = sorted(t for t, o in chosen.items() if not o)
         if unavailable:
-            feedback.pushWarning(self.tr('{} tile(s) have no {}: {}').format(
-                len(unavailable), api.dataset_label(wanted), ', '.join(unavailable)))
+            feedback.pushWarning(self.tr('{} {} no {}: {}').format(
+                api.plural(len(unavailable), 'tile'), 'has' if len(unavailable) == 1 else 'have',
+                api.dataset_label(wanted), ', '.join(unavailable)))
         if not available and unchecked:
             raise QgsProcessingException(self.tr("Couldn't check what's available: {}").format(search.error))
         if not available:
             found = api.sorted_datasets(api.summarise(search.offerings, list(extents)))
             hint = '; '.join(f'{api.dataset_label(d)} (year "{d.year}")' for d in found[:8])
             raise QgsProcessingException(
-                self.tr('None of the {} tile(s) have {}.').format(len(extents), api.dataset_label(wanted))
+                (self.tr('None of the {} tiles have {}.').format(len(extents), api.dataset_label(wanted))
+                 if len(extents) > 1 else self.tr('The tile has no {}.').format(api.dataset_label(wanted)))
                 + (self.tr(' Available here: {}').format(hint) if hint else ''))
 
         restricted = {o.dataset: o.rights for o in available.values() if api.is_non_commercial(o.rights)}
@@ -364,7 +366,8 @@ class DownloadTilesAlgorithm(QgsProcessingAlgorithm):
         if len(extents) > MAX_TILES:
             raise QgsProcessingException(self.tr(
                 'The area covers {} tiles; the limit is {}. Use a smaller area.').format(len(extents), MAX_TILES))
-        feedback.pushInfo(self.tr('{} tile(s) in the area: {}').format(len(extents), ', '.join(sorted(extents))))
+        feedback.pushInfo(self.tr('{} in the area: {}').format(
+            api.plural(len(extents), 'tile'), ', '.join(sorted(extents))))
         return grid.crs(), extents
 
     def _build_vrt(self, parameters, context, feedback, dataset_dir, files, dataset):
@@ -385,7 +388,7 @@ class DownloadTilesAlgorithm(QgsProcessingAlgorithm):
             if cutline is None:
                 feedback.pushWarning(self.tr('The VRT is not cropped: the input layer has no polygons.'))
         black = api.black_is_data(dataset.product)  # (night photos: black is part of the picture)
-        feedback.pushInfo(self.tr('Building VRT from {} file(s)').format(len(files))
+        feedback.pushInfo(self.tr('Building VRT from {}').format(api.plural(len(files), 'file'))
                           + (', cropped...' if cutline else '...'))
         try:
             if cutline:
